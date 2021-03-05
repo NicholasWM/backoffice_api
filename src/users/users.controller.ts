@@ -1,7 +1,6 @@
 import { Controller, Post, Body, ValidationPipe, UseGuards, Get, Param } from '@nestjs/common';
 import {UsersService} from './users.service'
 import {CreateUserDTO} from './dtos/create-user.dto'
-import {InsertUserInterest} from './dtos/insert-interests.dto'
 import {ReturnUserDTO} from './dtos/return-user.dto'
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/auth/roles.guards';

@@ -1,9 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CredentialsDto {
-	@ApiProperty()
+	@ApiProperty({
+		default:'abc@abc.com'
+	})
 	email: string;
 	
-	@ApiProperty()
+	@ApiProperty({
+		default:'secret123'
+	})
 	password: string;
 }

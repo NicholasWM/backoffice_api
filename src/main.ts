@@ -11,6 +11,7 @@ async function bootstrap() {
   });
   const options = new DocumentBuilder()
     .setTitle('PP BackOffice API')
+    .addBearerAuth()
     .setDescription('API Routes')
     .addBearerAuth()
     .setVersion('0.1')
