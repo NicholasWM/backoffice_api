@@ -25,7 +25,7 @@ export class ClientsController {
 		};
 	}
 	@Get()
-	// @UseGuards(AuthGuard(), RolesGuard)
+	@UseGuards(AuthGuard(), RolesGuard)
 	async getAll():Promise<Client[]>{
 		const clients = await this.clientsService.getAll();
 		return clients
