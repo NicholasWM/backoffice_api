@@ -17,7 +17,7 @@ export class ImagesController {
     FileInterceptor('image', {
       storage: diskStorage({
         destination: './uploads',
-        filename: editFileName,
+        filename: editFileName['upload'],
       }),
       fileFilter: imageFileFilter,
     }),
@@ -39,7 +39,7 @@ export class ImagesController {
     FilesInterceptor('image', 10, {
       storage: diskStorage({
         destination: './uploads/user',
-        filename: editFileName,
+        filename: editFileName['user'],
       }),
       fileFilter: imageFileFilter,
     }),
