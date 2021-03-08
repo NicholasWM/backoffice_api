@@ -18,12 +18,6 @@ export class User extends BaseEntity{
 	@Column({nullable:false, type: "varchar", length:200})
 	email:string
 
-	@Column({nullable:true, type: "bytea"})
-	photo: Buffer
-
-	@Column({nullable:true, type: "varchar"})
-	photoURI: string
-
 	@Column({nullable:false, type: "varchar", length:200})
 	name:string
 

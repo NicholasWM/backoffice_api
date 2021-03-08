@@ -11,7 +11,7 @@ export class ClientsService {
     private clientsRepository: ClientRepository,
   ){}
   async create(createClientDTO: CreateClientDTO): Promise<Client>{
-    return await this.clientsRepository.createClient(createClientDTO)
+    return this.clientsRepository.createClient(createClientDTO)
   }
   async getAll():Promise<Client[]>{
     const clients = await this.clientsRepository.find({

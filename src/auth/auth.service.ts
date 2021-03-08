@@ -3,13 +3,17 @@ import { UserRepository } from '../users/users.repository'
 import { InjectRepository } from '@nestjs/typeorm'
 import { CreateUserDTO } from '../users/dtos/create-user.dto'
 import { CredentialsDto } from '../auth/dtos/credentials.dto'
-import { User } from '../users/user.entity'
 import { UserRole } from '../users/user.roles.enum'
 import { JwtService } from '@nestjs/jwt'
+import { GetBase64ImageFromSystem, UploadImage } from 'src/utils/file-upload';
+import { UserImagesRepository } from 'src/images/user-images.repository';
 
 @Injectable()
 export class AuthService {
 	constructor(
+		@InjectRepository(UserImagesRepository)
+		private userImagesRepository: UserImagesRepository,
+
 		@InjectRepository(UserRepository)
 		private userRepository: UserRepository,
 		private jwtService:JwtService,
@@ -26,8 +30,14 @@ export class AuthService {
 					id:user.id
 				}
 				const token = await this.jwtService.sign(jwtPayload)
-				if(user?.photo){
-					return {id:user.id, name:user.name, photo: Buffer.from(user?.photo).toString('base64'), email:user.email, token}
+								
+				if(createUserDTO?.photo){
+					let filename = await UploadImage({imageData: createUserDTO.photo, categoryName: 'user'})
+					if(typeof(filename) === 'string'){
+						console.log("Filename: ", filename)
+						this.userImagesRepository.create({user, name: String(filename)}).save()
+					}
+					return {id:user.id, name:user.name, email:user.email, token, images: createUserDTO?.photo}
 				}
 				return {...user, token}
 			}
@@ -46,8 +56,12 @@ export class AuthService {
 			id:user.id
 		}
 		const token = await this.jwtService.sign(jwtPayload)
-		
-		return {id:user.id, name:user.name, photo: user?.photo ? Buffer.from(user?.photo).toString('base64'):undefined, email:user.email, token}
+		const image = await this.userImagesRepository.find({where:{userId:user.id}})
+		if(image){
+			const photo = await GetBase64ImageFromSystem(image[0].name, 'user')
+			return {id:user.id, name:user.name, email:user.email, token, images: photo}
+		}
+		return {id:user.id, name:user.name, email:user.email, token}
 	}
 	async getToken(id){ return await this.jwtService.sign({id})}
 

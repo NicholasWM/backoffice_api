@@ -17,9 +17,7 @@ export class AuthController {
 	async signup(
 		@Body(ValidationPipe) createUserDTO:CreateUserDTO,
 	): Promise<{message: string, statusCode:number, data:any}>{
-		console.log(createUserDTO)
 		const data = await this.authService.signUp(createUserDTO);
-		console.log(data)
 		return {
 			statusCode: HttpStatus.OK,
 			message: 'Cadastro realizado com sucesso',

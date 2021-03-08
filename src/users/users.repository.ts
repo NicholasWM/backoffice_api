@@ -13,16 +13,16 @@ export class UserRepository extends Repository<User>{
 		createUserDTO: CreateUserDTO,
 		role: UserRole,
 	): Promise<User> {
-		const {email, name, password, photo} = createUserDTO
+		const {email, name, password} = createUserDTO
 
 		const user = this.create();
 		user.email = email;
 		user.name = name;
 		user.role = role;
 		user.status = true;
-		if(typeof(photo) === 'string'){
-			user.photo = Buffer.from(photo,'base64')
-		}
+		// if(typeof(photo) === 'string'){
+		// 	user.photo = Buffer.from(photo,'base64')
+		// }
 		user.confirmationToken = crypto.randomBytes(32).toString('hex');
 		user.salt = await bcrypt.genSalt();
 		user.password = await this.hashPassword(password, user.salt);
@@ -45,8 +45,18 @@ export class UserRepository extends Repository<User>{
 		const users = await this.find({
 			select: ["id",'name', 'email']
 		})
-		return users
-	}
+		///////////////////////////ATENCAO
+		///////////////////////////ATENCAO
+		///////////////////////////ATENCAO
+		users.forEach(user => (
+			{...user, photo: ''}
+			))
+			return users
+		}
+		///////////////////////////ATENCAO
+		///////////////////////////ATENCAO
+		///////////////////////////ATENCAO
+		///////////////////////////ATENCAO
 	async checkCredentials(credentialsDto:CredentialsDto): Promise<User>{
 		const {email, password} = credentialsDto
 		const user = await this.findOne({email, status:true})

@@ -2,6 +2,7 @@ import { extname } from 'path';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import * as fs from 'fs';
 import { DiskStorageOptions } from 'multer';
+import path = require('path');
 
 // Allow only images
 export const imageFileFilter = (req, file, callback) => {
@@ -34,14 +35,41 @@ export const editFileName = {
   'upload': (req, file, callback):DiskStorageOptions => editFileNameDefaultFunction(req, file, callback, 'upload'),
 }
 
-export const uploadImage = async (imageData: string, categoryName: string) => {
-  const path = process.cwd()
-  const imageName = `${categoryName}-${new Date().toISOString()}.jpg`
-  const base64Data = imageData.replace(/^data:image\/jpeg;base64,/, "").replace(/^data:image\/png;base64,/, "")
-      fs.writeFile(path + `/uploads/${categoryName}/${imageName}.jpg`, base64Data, 'base64', (err)=>{
-      if(err) return null //this.logger.error(err)
-      else {
-          return true
-      }
-  })
+interface IUploadImage {
+  imageData: string,
+  categoryName: 
+    'user' |
+    'client'| 
+    'frete'|
+    'upload'
 }
+
+export const UploadImage = async ({imageData, categoryName}:IUploadImage) => 
+  new Promise((resolve, reject)=> {
+    const imageName = `${categoryName}-${new Date().toISOString().replace(/[:.-]/g,'')}.jpg`
+    const base64Data = imageData.replace(/^data:image\/jpeg;base64,/, "").replace(/^data:image\/png;base64,/, "")
+    fs.writeFile(`${process.cwd()}/uploads/${categoryName}/${imageName}`, base64Data, 'base64', (err)=>{
+      if(err) {
+        resolve(false)
+      }
+      else {
+        resolve(imageName)
+      }
+    })
+  }).then(r => r).catch(e=>e)
+
+export const GetBase64ImageFromSystem = async (imageName:string, category:string)=>
+  new Promise((resolve, reject)=>{
+    const pathImage = `${process.cwd()}/uploads/${category}/${imageName}`
+    fs.readFile(pathImage, (err, data)=>{
+      //error handle
+      if(err) reject(err);
+      //get image file extension name
+      let extensionName = path.extname(pathImage);
+      //convert image file to base64-encoded string
+      let base64Image = Buffer.from(data).toString('base64');
+      //combine all strings
+      let imgSrcString = `data:image/${extensionName.split('.').pop()};base64,${base64Image}`;
+      resolve(imgSrcString)
+    })
+  })

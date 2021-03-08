@@ -4,7 +4,7 @@ import {UserRepository} from './users.repository'
 import {CreateUserDTO} from './dtos/create-user.dto'
 import {UserRole} from './user.roles.enum'
 import {User} from './user.entity'
-
+import {UploadImage} from '../utils/file-upload'
 @Injectable()
 export class UsersService {
 	constructor(
@@ -16,9 +16,11 @@ export class UsersService {
 		if(createUserDTO.password != createUserDTO.passwordConfirmation){
 			throw new UnprocessableEntityException('As senhas não conferem');
 		}else{
+			
 			return this.userRepository.createUser(createUserDTO, UserRole.ADMIN);
 		}
 	}
+
 
 	async getAllUsers():Promise<User[]>{
 		return this.userRepository.getAllUsers()
