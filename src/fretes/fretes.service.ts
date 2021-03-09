@@ -12,6 +12,11 @@ export class FretesService {
   ){}
 
   async create(createFreteDTO:CreateFreteDTO): Promise<Frete>{
-    return this.fretesRepository.create(createFreteDTO)
+    return this.fretesRepository.create({
+      clientId: createFreteDTO.clientId,
+      date: new Date(createFreteDTO.date),
+      email: createFreteDTO.email,
+      price: createFreteDTO.price
+    }).save()
   }
 }

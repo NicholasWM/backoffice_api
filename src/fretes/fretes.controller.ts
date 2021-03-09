@@ -13,7 +13,8 @@ export class FretesController {
   async createFrete(
     @Body(ValidationPipe) createFreteDTO: CreateFreteDTO
   ): Promise<ReturnClientDTO> {
-    return {frete:await this.freteService.create(createFreteDTO), message:''}
+    const frete = await this.freteService.create(createFreteDTO)
+    return {frete, message:''}
   }
   
   // Paginação
