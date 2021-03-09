@@ -4,7 +4,6 @@ import {UserRepository} from './users.repository'
 import {CreateUserDTO} from './dtos/create-user.dto'
 import {UserRole} from './user.roles.enum'
 import {User} from './user.entity'
-import {UploadImage} from '../utils/file-upload'
 @Injectable()
 export class UsersService {
 	constructor(

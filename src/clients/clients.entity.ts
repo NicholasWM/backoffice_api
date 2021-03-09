@@ -30,9 +30,6 @@ export class Client extends BaseEntity{
 	@OneToMany(type => Frete, frete => frete.id)
 	fretes: Frete[];
 	
-	@Column({nullable:true, type: "bytea"})
-	photo: Buffer
-
 	// @Column({nullable:true, type: "varchar", length:50})
 	// negative_cancellations:string
 

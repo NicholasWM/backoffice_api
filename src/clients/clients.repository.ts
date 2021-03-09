@@ -1,7 +1,7 @@
 import { ConflictException, InternalServerErrorException } from "@nestjs/common"
 import {EntityRepository, Repository} from "typeorm"
 import {Client} from "./clients.entity"
-import { CreateClientDTO } from "./dtos/createClientDTO"
+import { CreateClientDTO } from "./dtos/create-client-dto"
 
 @EntityRepository(Client)
 export class ClientRepository extends Repository<Client>{
@@ -11,12 +11,8 @@ export class ClientRepository extends Repository<Client>{
     client.name = createClientDTO?.name;
     client.whats_app_1 = createClientDTO?.whats_app_1 || '';
     client.whats_app_2 = createClientDTO?.whats_app_2 || '';
-    if(typeof(createClientDTO.photo) === 'string'){
-      client.photo = Buffer.from(createClientDTO.photo,'base64')
-    }
     try {
       await client.save();
-      console.log(client, " Repository")
       return client
     } catch (error) {
       if(error.code.toString() === '23505'){

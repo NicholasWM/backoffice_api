@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Client } from './clients.entity';
 import { ClientRepository } from './clients.repository';
-import { CreateClientDTO } from './dtos/createClientDTO';
+import { CreateClientDTO } from './dtos/create-client-dto';
 
 @Injectable()
 export class ClientsService {
@@ -10,12 +10,14 @@ export class ClientsService {
     @InjectRepository(ClientRepository)
     private clientsRepository: ClientRepository,
   ){}
+
   async create(createClientDTO: CreateClientDTO): Promise<Client>{
-    return this.clientsRepository.createClient(createClientDTO)
+    return await this.clientsRepository.createClient(createClientDTO)
   }
+  
   async getAll():Promise<Client[]>{
     const clients = await this.clientsRepository.find({
-      select: ["id",'name', 'email', 'photo', 'whats_app_1', 'whats_app_2']
+      select: ["id",'name', 'email', 'whats_app_1', 'whats_app_2']
     });
     return clients
   }

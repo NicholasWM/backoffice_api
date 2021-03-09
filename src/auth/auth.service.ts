@@ -34,7 +34,6 @@ export class AuthService {
 				if(createUserDTO?.photo){
 					let filename = await UploadImage({imageData: createUserDTO.photo, categoryName: 'user'})
 					if(typeof(filename) === 'string'){
-						console.log("Filename: ", filename)
 						this.userImagesRepository.create({user, name: String(filename)}).save()
 					}
 					return {id:user.id, name:user.name, email:user.email, token, images: createUserDTO?.photo}
