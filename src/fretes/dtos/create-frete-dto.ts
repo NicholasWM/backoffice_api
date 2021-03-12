@@ -18,7 +18,7 @@ export class CreateFreteDTO {
 		message: 'Informe o id do Cliente'
 	})
 	@ApiProperty({
-		default:1,
+		default:"4daa9f36-accd-49d1-8550-41e43f31520d",
 	})
 	clientId: string;
 
@@ -28,7 +28,7 @@ export class CreateFreteDTO {
 	price: Number;
 
 	@ApiProperty({
-		default:1,
+		default:"2021/11/27",
 	})
   date:Date;
 }

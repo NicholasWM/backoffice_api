@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Post, Put, ValidationPipe } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Post, Put, Query, ValidationPipe } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiQuery, ApiProperty } from '@nestjs/swagger';
 import { FretesService } from './fretes.service';
-import { CreateFreteDTO, ReturnClientDTO } from './dtos'
+import { CreateFreteDTO, ReturnClientDTO, SearchFreteDTO } from './dtos'
 import { Frete } from './fretes.entity';
 @ApiTags('Fretes')
 // @ApiBearerAuth()
@@ -18,8 +18,17 @@ export class FretesController {
   }
   
   // Paginação
+  // Data Inicio consulta
+  // Data Fim consulta
+  // @ApiQuery({name:'page'})
   @Get()
-  async getAllFrete(){}
+  async getAllFrete(
+    @Query() searchFreteDTO: SearchFreteDTO
+  // ):Promise<Frete[]>{
+  ){
+    // return query
+    return await this.freteService.getAll(searchFreteDTO)
+  }
 
   @Get('search')
   async getFrete(){}

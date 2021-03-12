@@ -7,6 +7,7 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn, OneToMany, JoinColumn, ManyToOne
 } from 'typeorm'
+type IState = ['Marcada', 'Cancelada', 'Adiada', 'Confirmada']
 import { Frete_Image } from '../images/frete-images.entity';
 @Entity()
 export class Frete extends BaseEntity{
@@ -39,7 +40,7 @@ export class Frete extends BaseEntity{
   client: Client;
 
 	@Column({nullable:true, type: "varchar", length:100})
-	state:string
+	state:IState
 
 	@CreateDateColumn()
 	createdAt: Date;
