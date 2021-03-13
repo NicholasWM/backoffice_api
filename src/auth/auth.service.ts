@@ -16,6 +16,7 @@ export class AuthService {
 
 		@InjectRepository(UserRepository)
 		private userRepository: UserRepository,
+		
 		private jwtService:JwtService,
 	){}
 
@@ -32,7 +33,7 @@ export class AuthService {
 				const token = await this.jwtService.sign(jwtPayload)
 								
 				if(createUserDTO?.photo){
-					let filename = await UploadImage({imageData: createUserDTO.photo, categoryName: 'user'})
+					let filename = await UploadImage({imageData: createUserDTO.photo, categoryName: 'user', dirname: `${user.id}`})
 					if(typeof(filename) === 'string'){
 						this.userImagesRepository.create({user, name: String(filename)}).save()
 					}

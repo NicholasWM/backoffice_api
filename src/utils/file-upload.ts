@@ -41,23 +41,41 @@ interface IUploadImage {
     'user' |
     'client'| 
     'frete'|
-    'upload'
+    'upload',
+  dirname: string,
 }
 
-export const UploadImage = async ({imageData, categoryName}:IUploadImage) => 
-  new Promise((resolve, reject)=> {
-    const imageName = `${categoryName}-${new Date().toISOString().replace(/[:.-]/g,'')}.jpg`
+export const UploadImage = async ({imageData, categoryName, dirname}:IUploadImage) => 
+  new Promise(async (resolve, reject)=> {
+    const imageName = `${dirname} - ${categoryName}-${new Date().toISOString().replace(/[:.-]/g,'')}.jpg`
     const base64Data = imageData.replace(/^data:image\/jpeg;base64,/, "").replace(/^data:image\/png;base64,/, "")
-    fs.writeFile(`${process.cwd()}/uploads/${categoryName}/${imageName}`, base64Data, 'base64', (err)=>{
+    const baseDirectory = `${process.cwd()}/uploads/${categoryName}`
+    const fullDirectory = `${baseDirectory}/${dirname}`
+    const createDirectoryIfNotExists = async () => new Promise((res, rej)=>
+      {
+        new Promise((r, j) => {
+          if (!fs.existsSync(baseDirectory)){
+            fs.mkdirSync(baseDirectory);
+          }
+          r(true)
+        }).then(r1 => {
+          if (!fs.existsSync(fullDirectory)){
+            fs.mkdirSync(fullDirectory);
+          }
+          res(true)
+      })
+    }) 
+
+    await createDirectoryIfNotExists()
+    fs.writeFile(`${fullDirectory}/${imageName}`, base64Data, 'base64', (err)=>{
       if(err) {
+        console.log(err)
         resolve(false)
       }
-      else {
-        resolve(imageName)
-      }
+      else {resolve(imageName)}
     })
-  }).then(r => r).catch(e=>e)
-
+  }).then(r => r).catch(e => e)
+  
 export const GetBase64ImageFromSystem = async (imageName:string, category:string)=>
   new Promise((resolve, reject)=>{
     const pathImage = `${process.cwd()}/uploads/${category}/${imageName}`

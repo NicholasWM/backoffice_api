@@ -1,13 +1,15 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiQuery, ApiProperty } from '@nestjs/swagger';
 import { FretesService } from './fretes.service';
-import { CreateFreteDTO, ReturnClientDTO, SearchFreteDTO } from './dtos'
+import { CreateFreteDTO, InsertImagesFreteDTO, ReturnClientDTO, SearchFreteDTO } from './dtos'
 import { Frete } from './fretes.entity';
 @ApiTags('Fretes')
 // @ApiBearerAuth()
 @Controller('fretes')
 export class FretesController {
-  constructor(private freteService:FretesService){}
+  constructor(
+    private freteService:FretesService,
+  ){}
   
   @Post()
   async createFrete(
@@ -17,32 +19,35 @@ export class FretesController {
     return {frete, message:''}
   }
   
-  // Paginação
-  // Data Inicio consulta
-  // Data Fim consulta
-  // @ApiQuery({name:'page'})
   @Get()
   async getAllFrete(
     @Query() searchFreteDTO: SearchFreteDTO
-  // ):Promise<Frete[]>{
-  ){
-    // return query
+  ):Promise<Frete[]>{
     return await this.freteService.getAll(searchFreteDTO)
   }
 
-  @Get('search')
-  async getFrete(){}
+  // @Put()
+  // async updateFrete(){}
 
-  @Put()
-  async updateFrete(){}
-
-  @Delete()
-  async deleteFrete(){}
+  // @Delete()
+  // async deleteFrete(){}
 
   // Insere imagens em determinado frete
   // Recebe o parametro de qual é o frete e as imagens em Base64
   @Post('images')
-  async insertImages(){}
+  async insertImages(
+    @Body(ValidationPipe) insertImagesFreteDTO: InsertImagesFreteDTO
+  ){
+    return await this.freteService.insertImagesInFrete(insertImagesFreteDTO) ?
+      {
+        message:"Imagem inserida com sucesso!",
+        status:true
+      } 
+     :{
+        message:"Erro ao inserir a imagem.",
+        status:false
+      }
+  }
 
   // Pega as imagens de determinado frete pelo ID
   @Get('images/search')
