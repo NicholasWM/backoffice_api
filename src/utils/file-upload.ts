@@ -85,7 +85,6 @@ export const GetBase64ImageFromSystem = async ({imageName, category, dirname}:IG
     const pathImage = !!dirname.length ? 
       `${process.cwd()}/uploads/${category}/${dirname}/${imageName}`: 
       `${process.cwd()}/uploads/${category}/${imageName}` 
-    console.log(pathImage)
     fs.readFile(pathImage, (err, data)=>{
       //error handle
       if(err) reject(err);

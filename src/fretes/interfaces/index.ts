@@ -11,5 +11,5 @@ export interface IFreteWithImages {
   state: IState | null,
   createdAt: Date,
   updatedAt: Date,
-  fretes: Frete_Image[],
+  images: Frete_Image[],
 }

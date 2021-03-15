@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FreteImagesRepository } from 'src/images/frete-images.repository';
-import { UploadImage, getFiltersSearchFrete } from 'src/utils';
+import { UploadImage, getFiltersSearchFrete, GetBase64ImageFromSystem } from 'src/utils';
 import { Between, Connection, getConnection, LessThan, MoreThan } from 'typeorm';
 import { CreateFreteDTO, SearchFreteDTO } from './dtos';
 import { Frete } from './fretes.entity';
@@ -94,12 +94,12 @@ export class FretesService {
             {createdAt:'ASC'},
         })
       ))
-    let joinFretesWithEachImagesOfFrete = (fretesImages:loadedFreteImages): IFreteWithImages[] => 
+    let joinFretesWithEachImagesData = (fretesImages:loadedFreteImages): IFreteWithImages[] => 
       (fretesImages).map(
         (images:Frete_Image[], index: number): IFreteWithImages => (
-          {...fretes[index], fretes: images}
+          {...fretes[index], images}
         )
-      ) 
+      )
     const numberOfResults = 10
     let filters = getFiltersSearchFrete(searchFreteDTO)
     let fretes = await this.fretesRepository.find({
@@ -109,6 +109,17 @@ export class FretesService {
     })
     type loadedFreteImages = Array<Array<Frete_Image>>
     let fretesImagesLoaded = await loadFreteImages(fretes)
-    return joinFretesWithEachImagesOfFrete(fretesImagesLoaded)
+    const convertObjectTo64Image = 
+      (freteList:IFreteWithImages[])=>
+        freteList.map((frete:IFreteWithImages)=> Promise.all(frete.images?.map(
+            async image => 
+              await GetBase64ImageFromSystem({imageName:image.name, category:'frete', dirname: image.dirname})
+          )
+        )
+      )
+    const freteData = joinFretesWithEachImagesData(fretesImagesLoaded)
+    const imagesBase64 = await Promise.all(convertObjectTo64Image(freteData))
+    const freteDataWithImagesBase64 = freteData.map((item, index) => ({...item, images: imagesBase64[index]}))
+    return freteDataWithImagesBase64
   }
 }
