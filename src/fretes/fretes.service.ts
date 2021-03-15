@@ -28,7 +28,6 @@ export class FretesService {
     return this.fretesRepository.create({
       clientId: createFreteDTO.clientId,
       date: new Date(createFreteDTO.date),
-      email: createFreteDTO.email,
       price: createFreteDTO.price
     }).save()
   }
@@ -42,7 +41,6 @@ export class FretesService {
       select:[
         'clientId',
         'date',
-        'email',
         'price',
         'state',
         'updatedAt',

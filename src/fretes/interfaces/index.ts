@@ -3,7 +3,6 @@ import { IState } from "../types";
 
 export interface IFreteWithImages {
   id: string,
-  email:string,
   price: Number,
   deposit_returned: Number | null,
   date: Date,

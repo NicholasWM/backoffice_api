@@ -14,9 +14,6 @@ export class Frete extends BaseEntity{
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({nullable:true, type: "varchar", length:200})
-	email:string
-
 	@Column({nullable:false, type: "numeric"})
 	price:Number
 
