@@ -51,9 +51,9 @@ export class FretesController {
 
   // Pega as imagens de determinado frete pelo ID
   @Get('images/search')
-  async searchImages(){}
-
-  // Retorna todas as imagens em ordem crescente pela data
-  @Get('images')
-  async getImages(){}
+  async searchImages(
+    @Query() searchFreteDTO: SearchFreteDTO
+  ){
+    return await this.freteService.getImages(searchFreteDTO)
+  }
 }

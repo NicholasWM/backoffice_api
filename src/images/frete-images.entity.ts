@@ -21,6 +21,9 @@ export class Frete_Image extends BaseEntity{
 	@Column({nullable:false, type: "varchar"})
 	freteId: string;
 
+	@Column({nullable:false, type: "varchar"})
+	dirname: string;
+
 	@ManyToOne(type => Frete, frete => frete.images, {nullable:false})
 	@JoinColumn({ name: "freteId" })
   frete: Frete;

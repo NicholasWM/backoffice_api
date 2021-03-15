@@ -6,7 +6,9 @@ import {
 	Column,
 	CreateDateColumn,
 	UpdateDateColumn, 
-	OneToMany
+	OneToMany,
+	JoinTable,
+	JoinColumn
 } from 'typeorm'
 import { Frete } from '../fretes/fretes.entity';
 @Entity()

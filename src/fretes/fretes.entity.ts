@@ -7,8 +7,8 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn, OneToMany, JoinColumn, ManyToOne
 } from 'typeorm'
-type IState = ['Marcada', 'Cancelada', 'Adiada', 'Confirmada']
 import { Frete_Image } from '../images/frete-images.entity';
+import { IState } from './types'
 @Entity()
 export class Frete extends BaseEntity{
 	@PrimaryGeneratedColumn('uuid')
