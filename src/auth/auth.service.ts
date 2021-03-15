@@ -58,7 +58,7 @@ export class AuthService {
 		const token = await this.jwtService.sign(jwtPayload)
 		const image = await this.userImagesRepository.find({where:{userId:user.id}})
 		if(image){
-			const photo = await GetBase64ImageFromSystem(image[0].name, 'user')
+			const photo = await GetBase64ImageFromSystem({imageName: image[0].name, category: 'user', dirname: ''})
 			return {id:user.id, name:user.name, email:user.email, token, images: photo}
 		}
 		return {id:user.id, name:user.name, email:user.email, token}

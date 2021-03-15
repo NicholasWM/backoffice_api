@@ -35,13 +35,16 @@ export const editFileName = {
   'upload': (req, file, callback):DiskStorageOptions => editFileNameDefaultFunction(req, file, callback, 'upload'),
 }
 
+type imageCategories = 'user' | 'client'| 'frete'| 'upload' 
 interface IUploadImage {
   imageData: string,
-  categoryName: 
-    'user' |
-    'client'| 
-    'frete'|
-    'upload',
+  categoryName: imageCategories,
+  dirname: string,
+}
+
+interface IGetImageProperties {
+  imageName: string,
+  category: imageCategories,
   dirname: string,
 }
 
@@ -76,9 +79,13 @@ export const UploadImage = async ({imageData, categoryName, dirname}:IUploadImag
     })
   }).then(r => r).catch(e => e)
   
-export const GetBase64ImageFromSystem = async (imageName:string, category:string)=>
+// export const GetBase64ImageFromSystem = async (imageName:string, category:imageCategories)=>
+export const GetBase64ImageFromSystem = async ({imageName, category, dirname}:IGetImageProperties)=>
   new Promise((resolve, reject)=>{
-    const pathImage = `${process.cwd()}/uploads/${category}/${imageName}`
+    const pathImage = !!dirname.length ? 
+      `${process.cwd()}/uploads/${category}/${dirname}/${imageName}`: 
+      `${process.cwd()}/uploads/${category}/${imageName}` 
+    console.log(pathImage)
     fs.readFile(pathImage, (err, data)=>{
       //error handle
       if(err) reject(err);
