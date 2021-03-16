@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FreteImagesRepository } from 'src/images/frete-images.repository';
 import { UploadImage, getFiltersSearchFrete, GetBase64ImageFromSystem } from 'src/utils';
-import { Between, Connection, getConnection, LessThan, MoreThan } from 'typeorm';
 import { CreateFreteDTO, SearchFreteDTO } from './dtos';
 import { Frete } from './fretes.entity';
 import { FretesRepository } from './fretes.repository';
@@ -10,6 +9,7 @@ import { InsertImagesFreteDTO } from './dtos'
 import { ClientRepository } from 'src/clients/clients.repository';
 import { Frete_Image } from 'src/images/frete-images.entity';
 import { IFreteWithImages } from './interfaces';
+import { IState } from './types';
 
 @Injectable()
 export class FretesService {
@@ -121,5 +121,37 @@ export class FretesService {
     const imagesBase64 = await Promise.all(convertObjectTo64Image(freteData))
     const freteDataWithImagesBase64 = freteData.map((item, index) => ({...item, images: imagesBase64[index]}))
     return freteDataWithImagesBase64
+  }
+  async postponeDate(newDate: string, idFrete: string){
+    const frete = await this.fretesRepository.findOne({where:{id: idFrete}})
+    if(frete){
+      frete.state = 'Adiada'
+      frete.postponed_frete = new Date(newDate)
+      try {
+        await frete.save()
+        this.fretesRepository.create({
+          clientId: frete.clientId,
+          price: frete.price,
+          date: new Date(newDate),
+        }).save()
+        return true
+      } catch (e) {
+        return e
+      }
+    }
+    return false
+  }
+  async changeState(idFrete: string, state: IState){
+    const frete = await this.fretesRepository.findOne({where:{id: idFrete}})
+    if(frete){
+      frete.state = state
+      try{
+        await frete.save();
+      }catch(e){
+        return false
+      }
+      return true
+    }
+    return false 
   }
 }

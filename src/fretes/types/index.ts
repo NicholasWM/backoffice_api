@@ -1,1 +1,1 @@
-export type IState = ['Marcada', 'Cancelada', 'Adiada', 'Confirmada']
+export type IState = 'Marcada'| 'Cancelada'| 'Adiada'| 'Confirmada'

@@ -36,7 +36,7 @@ export class Frete extends BaseEntity{
 	@JoinColumn({ name: "clientId" })
   client: Client;
 
-	@Column({nullable:true, type: "varchar", length:100})
+	@Column({nullable:true, type: "varchar", length:100, default:'Marcada'})
 	state:IState
 
 	@CreateDateColumn()

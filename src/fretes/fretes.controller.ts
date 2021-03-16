@@ -1,8 +1,12 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiQuery, ApiProperty } from '@nestjs/swagger';
 import { FretesService } from './fretes.service';
-import { CreateFreteDTO, InsertImagesFreteDTO, ReturnClientDTO, SearchFreteDTO } from './dtos'
+import { CreateFreteDTO, InsertImagesFreteDTO, ReturnClientDTO, SearchFreteDTO, UpdateFreteDTO } from './dtos'
 import { Frete } from './fretes.entity';
+import { dateRegex } from 'src/utils';
+
+
+
 @ApiTags('Fretes')
 // @ApiBearerAuth()
 @Controller('fretes')
@@ -26,8 +30,39 @@ export class FretesController {
     return await this.freteService.getAll(searchFreteDTO)
   }
 
-  // @Put()
-  // async updateFrete(){}
+  
+  // Adiar Frete
+  // Cancelar Frete
+  // Reagendar Frete
+  // Confirmar Frete
+  @Put()
+  async updateFrete(
+    @Body(ValidationPipe) action:UpdateFreteDTO
+  ){
+    const actions = {
+      'adiar': () => {
+        if(dateRegex(action.newDate)){
+          if(this.freteService.postponeDate(action.newDate, action.freteId)){
+            return {message: `Adiada com sucesso para a data: ${new Date(action.newDate).toLocaleDateString()}`}
+          }
+        }
+      },
+      'cancelar': () => {
+        if(this.freteService.changeState(action.freteId, 'Cancelada')){
+          return {message: 'Cancelada com sucesso'}
+        }
+      },
+      'confirmar': () => {
+        if(this.freteService.changeState(action.freteId, 'Confirmada')){
+          return {message: 'Confirmada com sucesso'}
+        }
+      },
+    }
+    const message = actions[action.action]()
+    return !!message ? message : {message: 'Erro ao executar a action!'}
+  }
+
+
 
   // @Delete()
   // async deleteFrete(){}
