@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Post, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from 'src/auth/roles.guards';
 import { Client } from './clients.entity';
 import { ClientsService } from './clients.service';
-import { CreateClientDTO } from './dtos/create-client-dto';
-import { ReturnClientDTO } from './dtos/return-client-dto';
+import { CreateClientDTO, ReturnClientDTO, UpdateClientDTO } from './dtos';
 
 @ApiTags("Clients")
 @ApiBearerAuth()
@@ -15,7 +14,7 @@ export class ClientsController {
 	constructor(private clientsService: ClientsService){}
   
   @Post()
-	async createAdminUser(
+	async create(
 		@Body(ValidationPipe) createClientDTO:CreateClientDTO,
 	): Promise<ReturnClientDTO>{
 		const client = await this.clientsService.create(createClientDTO);
@@ -28,5 +27,16 @@ export class ClientsController {
 	async getAll():Promise<Client[]>{
 		const clients = await this.clientsService.getAll();
 		return clients
+	}
+
+	@Put()
+	async update(
+		@Body(ValidationPipe) updateClientDTO:UpdateClientDTO,
+	){
+		const client = await this.clientsService.update(updateClientDTO);
+		return {
+			client,
+			message: 'Cliente atualizado com sucesso',
+		};
 	}
 }
