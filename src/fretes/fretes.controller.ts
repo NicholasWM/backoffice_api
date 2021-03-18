@@ -24,7 +24,7 @@ export class FretesController {
   }
   
   @Get()
-  async getAllFrete(
+  async getAll(
     @Query() searchFreteDTO: SearchFreteDTO
   ):Promise<Frete[]>{
     return await this.freteService.getAll(searchFreteDTO)

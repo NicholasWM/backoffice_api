@@ -1,3 +1,4 @@
+import { SearchClientsDTO } from 'src/clients/dtos'
 import { Between, MoreThan, LessThan } from 'typeorm'
 import { SearchFreteDTO } from '../fretes/dtos'
 
@@ -24,4 +25,14 @@ export const getFiltersSearchFrete = (searchFreteDTO:SearchFreteDTO)=> {
     }
   }
   return filters
-} 
+}
+
+export const getFiltersSearchClient = (searchClientsDTO:SearchClientsDTO)=> {
+  let filters:any = {}
+  Object.keys(searchClientsDTO).map(key => {
+    if(searchClientsDTO[key] && key !== 'page'){
+      filters[key] = searchClientsDTO[key]
+    }
+  })
+  return filters
+}

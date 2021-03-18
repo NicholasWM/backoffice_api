@@ -9,7 +9,6 @@ import {
 	UpdateDateColumn, 
 	OneToMany,
 	JoinColumn,
-	JoinTable,
 } from 'typeorm'
 import { Frete } from '../fretes/fretes.entity';
 @Entity()
