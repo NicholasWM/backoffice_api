@@ -1,4 +1,4 @@
-import {IsEmail, IsNotEmpty, MaxLength, IsPhoneNumber} from 'class-validator'
+import { IsNotEmpty, MaxLength } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateClientDTO {
@@ -24,16 +24,4 @@ export class UpdateClientDTO {
     required: false
 	})
 	name: string;
-
-	@ApiProperty({
-		default:'13999999999',
-    required: false,
-	})
-	whats_app_1: string;
-
-	@ApiProperty({
-		default:'13999999999',
-    required: false,
-	})
-	whats_app_2: string;
 }

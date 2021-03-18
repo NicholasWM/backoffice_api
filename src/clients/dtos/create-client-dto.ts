@@ -1,5 +1,6 @@
 import {IsEmail, IsNotEmpty, MaxLength, IsPhoneNumber} from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger';
+import { IContact } from '../types';
 
 export class CreateClientDTO {
 	@IsNotEmpty({
@@ -28,21 +29,13 @@ export class CreateClientDTO {
 	})
 	name: string;
 
-  
-	@IsNotEmpty({
-		message: 'Informe o numero do usuario'
+  @ApiProperty({
+		default: [{
+			desc:  'WhatsApp',
+			info:  '13999999',
+			clientID: ''
+		}]
 	})
-	@MaxLength(30,{
-		message: 'O numero do Cliente deve ter menos de 30 caracteres',
-	})
-  @IsPhoneNumber('BR')
-	@ApiProperty({
-		default:'13999999999',
-	})
-	whats_app_1: string;
+	contacts: Array<IContact>;
 
-	@ApiProperty({
-		default:'13999999999',
-	})
-	whats_app_2: string;
 }

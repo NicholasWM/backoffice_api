@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Post, Put, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from 'src/auth/roles.guards';
 import { Client } from './clients.entity';
 import { ClientsService } from './clients.service';
-import { CreateClientDTO, ReturnClientDTO, UpdateClientDTO } from './dtos';
+import { CreateClientDTO, ReturnClientDTO, SearchClientsDTO, UpdateClientDTO } from './dtos';
 
 @ApiTags("Clients")
 @ApiBearerAuth()
@@ -24,8 +24,10 @@ export class ClientsController {
 		};
 	}
 	@Get()
-	async getAll():Promise<Client[]>{
-		const clients = await this.clientsService.getAll();
+	async getAll(
+    @Query() searchClientsDTO: SearchClientsDTO
+	):Promise<Client[]>{
+		const clients = await this.clientsService.getAll(searchClientsDTO);
 		return clients
 	}
 

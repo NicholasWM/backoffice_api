@@ -1,3 +1,4 @@
+import { Contact } from 'src/contacts/entities/contact.entity';
 import {
 	Entity,
 	Unique,
@@ -7,8 +8,8 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn, 
 	OneToMany,
+	JoinColumn,
 	JoinTable,
-	JoinColumn
 } from 'typeorm'
 import { Frete } from '../fretes/fretes.entity';
 @Entity()
@@ -23,14 +24,12 @@ export class Client extends BaseEntity{
 	@Column({nullable:false, type: "varchar", length:200})
 	name:string
 
-	@Column({nullable:false, type: "varchar", length:50})
-	whats_app_1:string
-
-	@Column({nullable:true, type: "varchar", length:50})
-	whats_app_2:string
-
 	@OneToMany(type => Frete, frete => frete.id)
 	fretes: Frete[];
+	
+	@OneToMany(type => Contact, contact => contact)
+	@JoinColumn({name:'contacts'})
+	contacts: Contact[];
 	
 	// @Column({nullable:true, type: "varchar", length:50})
 	// negative_cancellations:string

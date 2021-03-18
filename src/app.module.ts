@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './configs/typeorm.config';
 import { ClientsModule } from './clients/clients.module';
 import { FretesModule } from './fretes/fretes.module';
+import { ContactsModule } from './contacts/contacts.module';
 @Module({
   imports: [
     AuthModule,
@@ -18,7 +19,8 @@ import { FretesModule } from './fretes/fretes.module';
     UsersModule,
     ImagesModule,
     ClientsModule,
-    FretesModule
+    FretesModule,
+    ContactsModule
   ],
   controllers: [],
   providers: [],
