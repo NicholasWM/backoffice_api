@@ -3,7 +3,7 @@ import { IState } from "../types";
 
 export interface IFreteWithImages {
   id: string,
-  price: Number,
+  prices: any,
   deposit_returned: Number | null,
   date: Date,
   postponed_frete: Date | null,

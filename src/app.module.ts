@@ -8,6 +8,7 @@ import { typeOrmConfig } from './configs/typeorm.config';
 import { ClientsModule } from './clients/clients.module';
 import { FretesModule } from './fretes/fretes.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { PricesModule } from './prices/prices.module';
 @Module({
   imports: [
     AuthModule,
@@ -20,7 +21,8 @@ import { ContactsModule } from './contacts/contacts.module';
     ImagesModule,
     ClientsModule,
     FretesModule,
-    ContactsModule
+    ContactsModule,
+    PricesModule
   ],
   controllers: [],
   providers: [],

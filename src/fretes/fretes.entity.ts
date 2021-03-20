@@ -1,11 +1,12 @@
 import { Client } from 'src/clients/clients.entity';
+import { Price } from 'src/prices/entities/price.entity';
 import {
 	Entity,
 	BaseEntity,
 	PrimaryGeneratedColumn,
 	Column,
 	CreateDateColumn,
-	UpdateDateColumn, OneToMany, JoinColumn, ManyToOne
+	UpdateDateColumn, OneToMany, JoinColumn, ManyToOne, JoinTable, ManyToMany
 } from 'typeorm'
 import { Frete_Image } from '../images/frete-images.entity';
 import { IState } from './types'
@@ -13,9 +14,6 @@ import { IState } from './types'
 export class Frete extends BaseEntity{
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
-
-	@Column({nullable:false, type: "numeric"})
-	price:Number
 
 	@Column({nullable:true, type: "numeric"})
 	deposit_returned: Number
@@ -38,6 +36,10 @@ export class Frete extends BaseEntity{
 
 	@Column({nullable:true, type: "varchar", length:100, default:'Marcada'})
 	state:IState
+
+  @ManyToMany(type => Price, {eager: true})
+  @JoinTable()
+  prices: Price[];
 
 	@CreateDateColumn()
 	createdAt: Date;

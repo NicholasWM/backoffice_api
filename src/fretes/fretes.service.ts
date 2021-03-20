@@ -10,6 +10,8 @@ import { ClientRepository } from 'src/clients/clients.repository';
 import { Frete_Image } from 'src/images/frete-images.entity';
 import { IFreteWithImages } from './interfaces';
 import { IState } from './types';
+import { PriceRepository } from 'src/prices/prices.repository';
+import { In } from 'typeorm';
 
 @Injectable()
 export class FretesService {
@@ -22,13 +24,31 @@ export class FretesService {
 
     @InjectRepository(ClientRepository)
     private clientRepository:ClientRepository,
+
+    @InjectRepository(PriceRepository)
+    private priceRepository:PriceRepository,
   ){}
 
-  async create(createFreteDTO:CreateFreteDTO): Promise<Frete>{
+  // async create(createFreteDTO:CreateFreteDTO): Promise<Frete>{
+  async create(createFreteDTO:CreateFreteDTO): Promise<any>{
+    const [client, count] = await this.clientRepository.findAndCount({where:{id:createFreteDTO.clientId}})
+    if(count === 0){
+      return `Invalid User ID: ${createFreteDTO.clientId}` 
+    }
+    const catchInvalidPricesID = () => createFreteDTO.prices.filter((priceId, index)=> !prices.map(({id})=> id).includes(priceId))
+    const prices = await this.priceRepository.find({
+      where: {
+        id: In(createFreteDTO.prices)
+      }
+    })
+    const invalidPrices = catchInvalidPricesID()
+    if(invalidPrices.length){
+      return `Invalid Prices: ${invalidPrices}` 
+    }
     return this.fretesRepository.create({
       clientId: createFreteDTO.clientId,
       date: new Date(createFreteDTO.date),
-      price: createFreteDTO.price
+      prices: prices
     }).save()
   }
 
@@ -36,12 +56,12 @@ export class FretesService {
     const numberOfResults = 30
     let filters = getFiltersSearchFrete(searchFreteDTO)
     return await this.fretesRepository.find({
+      relations:['prices'],
       order:
         {date:'ASC'},
       select:[
         'clientId',
         'date',
-        'price',
         'state',
         'updatedAt',
         'postponed_frete',
@@ -131,7 +151,7 @@ export class FretesService {
         await frete.save()
         this.fretesRepository.create({
           clientId: frete.clientId,
-          price: frete.price,
+          prices: frete.prices,
           date: new Date(newDate),
         }).save()
         return true
