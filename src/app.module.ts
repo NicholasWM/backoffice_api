@@ -9,6 +9,7 @@ import { ClientsModule } from './clients/clients.module';
 import { FretesModule } from './fretes/fretes.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { PricesModule } from './prices/prices.module';
+import { ParkingModule } from './parking/parking.module';
 @Module({
   imports: [
     AuthModule,
@@ -22,7 +23,8 @@ import { PricesModule } from './prices/prices.module';
     ClientsModule,
     FretesModule,
     ContactsModule,
-    PricesModule
+    PricesModule,
+    ParkingModule
   ],
   controllers: [],
   providers: [],

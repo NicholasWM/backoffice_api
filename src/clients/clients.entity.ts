@@ -1,4 +1,5 @@
 import { Contact } from 'src/contacts/entities/contact.entity';
+import { Parking } from 'src/parking/entities/parking.entity';
 import {
 	Entity,
 	Unique,
@@ -29,6 +30,10 @@ export class Client extends BaseEntity{
 	@OneToMany(type => Contact, contact => contact)
 	@JoinColumn({name:'contacts'})
 	contacts: Contact[];
+
+	@OneToMany(type => Parking, parking => parking)
+	@JoinColumn({name:'Parkings'})
+	Parkings: Parking[];
 	
 	// @Column({nullable:true, type: "varchar", length:50})
 	// negative_cancellations:string
