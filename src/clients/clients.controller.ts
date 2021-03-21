@@ -7,8 +7,8 @@ import { ClientsService } from './clients.service';
 import { CreateClientDTO, ReturnClientDTO, SearchClientsDTO, UpdateClientDTO } from './dtos';
 
 @ApiTags("Clients")
-@ApiBearerAuth()
-@UseGuards(AuthGuard(), RolesGuard)
+// @ApiBearerAuth()
+// @UseGuards(AuthGuard(), RolesGuard)
 @Controller('clients')
 export class ClientsController {
 	constructor(private clientsService: ClientsService){}

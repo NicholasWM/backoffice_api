@@ -17,6 +17,9 @@ export class Frete extends BaseEntity{
 
 	@Column({nullable:true, type: "numeric"})
 	deposit_returned: Number
+	
+	@Column({nullable:true, type: "numeric"})
+	discount: Number
 
 	@Column({nullable:false, type: "timestamp"})
 	date:Date
