@@ -8,7 +8,6 @@ export class CreateFreteDTO {
 	})
 	clientId: string;
 
-	@IsNotEmpty()
 	@ApiProperty({
 		description: "Array of ids of the prices"
 	})
@@ -19,4 +18,7 @@ export class CreateFreteDTO {
 		description:"2021/11/27",
 	})
   date:Date;
+
+	@ApiProperty()
+  customPrice:number;
 }

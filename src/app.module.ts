@@ -10,6 +10,8 @@ import { FretesModule } from './fretes/fretes.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { PricesModule } from './prices/prices.module';
 import { ParkingModule } from './parking/parking.module';
+import { PurchasingModule } from './purchasing/purchasing.module';
+import { ProductsModule } from './products/products.module';
 @Module({
   imports: [
     AuthModule,
@@ -24,7 +26,9 @@ import { ParkingModule } from './parking/parking.module';
     FretesModule,
     ContactsModule,
     PricesModule,
-    ParkingModule
+    ParkingModule,
+    PurchasingModule,
+    ProductsModule
   ],
   controllers: [],
   providers: [],

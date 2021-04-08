@@ -33,7 +33,6 @@ export class FretesController {
   
   // Adiar Frete
   // Cancelar Frete
-  // Reagendar Frete
   // Confirmar Frete
   @Put()
   async updateFrete(

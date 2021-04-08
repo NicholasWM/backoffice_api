@@ -26,7 +26,7 @@ export class ClientsService {
     return client
   }
 
-  async getAll(searchClientsDTO:SearchClientsDTO):Promise<any>{
+  async getWithFilters(searchClientsDTO:SearchClientsDTO):Promise<any>{
     const numberOfResults = 30
     let filters = getFiltersSearchClient(searchClientsDTO)
     const clients = await this.clientsRepository.find({
@@ -39,6 +39,20 @@ export class ClientsService {
     // const clients = await this.clientsRepository.find({take:50, skip:searchClientsDTO.page| 0});
     const contacts = await this.contactsRepository.find({where:{clientId:In(clients.map(({id})=> id))}})
     return clients.map(client => ({...client,  contacts: contacts.filter(contact => contact.clientId === client.id)}))
+  }
+
+  async getAll():Promise<any>{
+    const clients = await this.clientsRepository.find({select:['name', 'id']})
+    const contacts = await this.contactsRepository.find({where:{clientId:In(clients.map(({id})=> id))}, select:['description', 'info', 'status', 'clientId', 'id']})
+    return clients.map(client => ({...client,  contacts: contacts.filter(contact => contact.clientId === client.id)}))
+  }
+  async getOne(id: string):Promise<any>{
+    const client = await this.clientsRepository.findOne(id)
+    if(client){
+      const contacts = await this.contactsRepository.find({where:{clientId:id}})
+      return {...client, contacts}
+    }
+    return false
   }
   
   async update(updateClientDTO: UpdateClientDTO): Promise<Client| false>{

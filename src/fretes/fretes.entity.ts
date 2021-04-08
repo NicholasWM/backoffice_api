@@ -21,6 +21,24 @@ export class Frete extends BaseEntity{
 	@Column({nullable:true, type: "numeric"})
 	discount: Number
 
+	@Column({nullable:true, type: "numeric", default: 0})
+	creditPaid: Number
+
+	@Column({nullable:true, type: "numeric", default: 0})
+	depositPaid: Number
+
+	@Column({nullable:true, type: "numeric", default: 0})
+	debitPaid: Number
+
+	@Column({nullable:true, type: "numeric", default: 0})
+	moneyPaid: Number
+
+	@Column({nullable:true, type: "numeric", default: 0})
+	numberOfPeople: Number
+
+	@Column({nullable:true, type: "numeric"})
+	customPrice: Number
+
 	@Column({nullable:false, type: "timestamp"})
 	date:Date
   

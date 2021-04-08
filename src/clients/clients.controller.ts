@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, Query, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from 'src/auth/roles.guards';
@@ -24,11 +24,32 @@ export class ClientsController {
 		};
 	}
 	@Get()
-	async getAll(
+	async getWithFilters(
     @Query() searchClientsDTO: SearchClientsDTO
 	):Promise<Client[]>{
-		const clients = await this.clientsService.getAll(searchClientsDTO);
+		const clients = await this.clientsService.getWithFilters(searchClientsDTO);
 		return clients
+	}
+
+	@Get('all')
+	async getAll():Promise<Client[]>{
+		const clients = await this.clientsService.getAll();
+		return clients
+	}
+
+	@Get(':id')
+	async getOne(@Param() params){
+		const client = await this.clientsService.getOne(params);
+		return client?
+		{
+			item:client,
+			message: 'Cliente encontrado com sucesso',
+		}
+		:
+		{
+			item:client,
+			message: 'Cliente não encontrado',
+		};
 	}
 
 	@Put()

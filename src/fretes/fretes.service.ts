@@ -35,21 +35,30 @@ export class FretesService {
     if(count === 0){
       return `Invalid User ID: ${createFreteDTO.clientId}` 
     }
-    const catchInvalidPricesID = () => createFreteDTO.prices.filter((priceId, index)=> !prices.map(({id})=> id).includes(priceId))
-    const prices = await this.priceRepository.find({
-      where: {
-        id: In(createFreteDTO.prices)
+    if(createFreteDTO.prices){
+      const catchInvalidPricesID = () => createFreteDTO.prices.filter((priceId, index)=> !prices.map(({id})=> id).includes(priceId))
+      const prices = await this.priceRepository.find({
+        where: {
+          id: In(createFreteDTO.prices)
+        }
+      })
+      const invalidPrices = catchInvalidPricesID()
+      if(invalidPrices.length){
+        return `Invalid Prices: ${invalidPrices}` 
       }
-    })
-    const invalidPrices = catchInvalidPricesID()
-    if(invalidPrices.length){
-      return `Invalid Prices: ${invalidPrices}` 
+      return this.fretesRepository.create({
+        clientId: createFreteDTO.clientId,
+        date: new Date(createFreteDTO.date),
+        prices: prices
+      }).save()
     }
-    return this.fretesRepository.create({
-      clientId: createFreteDTO.clientId,
-      date: new Date(createFreteDTO.date),
-      prices: prices
-    }).save()
+    if(createFreteDTO.customPrice){
+      return this.fretesRepository.create({
+        clientId: createFreteDTO.clientId,
+        date: new Date(createFreteDTO.date),
+        customPrice: createFreteDTO.customPrice
+      }).save()
+    }
   }
 
   async getAll(searchFreteDTO:SearchFreteDTO): Promise<Frete[]>{
@@ -64,9 +73,17 @@ export class FretesService {
         'date',
         'state',
         'updatedAt',
+        'createdAt',
         'postponed_frete',
         'deposit_returned',
-        'id'
+        'id',
+        'customPrice',
+        'creditPaid',
+        'debitPaid',
+        'depositPaid',
+        'discount',
+        'moneyPaid',
+        'numberOfPeople',
       ],
       where:
         filters,
