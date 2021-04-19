@@ -5,10 +5,10 @@ type actionsFrete = 'adiar' | 'cancelar' | 'confirmar'
 
 export class UpdateFreteDTO {
 	@IsNotEmpty()
-	@IsIn(['adiar' , 'cancelar', 'confirmar'])
+	@IsIn(['adiar' , 'cancelar', 'confirmar', 'pagamento'])
 	@ApiProperty({
 		default:'Marcada',
-		description:"'adiar' | 'cancelar' | 'reagendar' | 'confirmar'",
+		description:"'adiar' | 'cancelar' | 'confirmar'",
 		required:true
 	})
   action:actionsFrete;

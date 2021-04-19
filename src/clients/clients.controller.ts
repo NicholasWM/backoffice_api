@@ -4,7 +4,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from 'src/auth/roles.guards';
 import { Client } from './clients.entity';
 import { ClientsService } from './clients.service';
-import { CreateClientDTO, ReturnClientDTO, SearchClientsDTO, UpdateClientDTO } from './dtos';
+import { CreateClientDTO, GetClientByIdDTO, ReturnClientDTO, SearchClientsDTO, UpdateClientDTO } from './dtos';
 
 @ApiTags("Clients")
 // @ApiBearerAuth()
@@ -37,9 +37,9 @@ export class ClientsController {
 		return clients
 	}
 
-	@Get(':id')
-	async getOne(@Param() params){
-		const client = await this.clientsService.getOne(params);
+	@Get('search')
+	async getOne(@Query() getClientByIdDTO:GetClientByIdDTO){
+		const client = await this.clientsService.getOne(getClientByIdDTO);
 		return client?
 		{
 			item:client,

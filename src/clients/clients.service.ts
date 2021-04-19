@@ -6,7 +6,7 @@ import { getFiltersSearchClient } from 'src/utils';
 import { In } from 'typeorm';
 import { Client } from './clients.entity';
 import { ClientRepository } from './clients.repository';
-import { CreateClientDTO, SearchClientsDTO, UpdateClientDTO } from './dtos';
+import { CreateClientDTO, GetClientByIdDTO, SearchClientsDTO, UpdateClientDTO } from './dtos';
 
 @Injectable()
 export class ClientsService {
@@ -46,7 +46,8 @@ export class ClientsService {
     const contacts = await this.contactsRepository.find({where:{clientId:In(clients.map(({id})=> id))}, select:['description', 'info', 'status', 'clientId', 'id']})
     return clients.map(client => ({...client,  contacts: contacts.filter(contact => contact.clientId === client.id)}))
   }
-  async getOne(id: string):Promise<any>{
+  
+  async getOne({id}:GetClientByIdDTO):Promise<any>{
     const client = await this.clientsRepository.findOne(id)
     if(client){
       const contacts = await this.contactsRepository.find({where:{clientId:id}})

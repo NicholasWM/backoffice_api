@@ -12,6 +12,7 @@ import { IFreteWithImages } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
 import { In } from 'typeorm';
+import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 
 @Injectable()
 export class FretesService {
@@ -190,5 +191,13 @@ export class FretesService {
       return true
     }
     return false 
+  }
+
+  async getOne({id}:GetFreteByIdDTO):Promise<any>{
+    const frete = await this.fretesRepository.findOne(id)
+    if(frete){
+      return frete
+    }
+    return false
   }
 }

@@ -4,6 +4,7 @@ import { FretesService } from './fretes.service';
 import { CreateFreteDTO, InsertImagesFreteDTO, ReturnClientDTO, SearchFreteDTO, UpdateFreteDTO } from './dtos'
 import { Frete } from './fretes.entity';
 import { dateRegex } from 'src/utils';
+import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 
 
 
@@ -30,10 +31,25 @@ export class FretesController {
     return await this.freteService.getAll(searchFreteDTO)
   }
 
+  @Get('search')
+	async getOne(@Query() getClientByIdDTO:GetFreteByIdDTO){
+		const frete = await this.freteService.getOne(getClientByIdDTO);
+		return frete?
+		{
+			item:frete,
+			message: 'Cliente encontrado com sucesso',
+		}
+		:
+		{
+			item:frete,
+			message: 'Cliente não encontrado',
+		};
+	}
   
   // Adiar Frete
   // Cancelar Frete
   // Confirmar Frete
+  // Inserir pagamento
   @Put()
   async updateFrete(
     @Body(ValidationPipe) action:UpdateFreteDTO
@@ -54,6 +70,11 @@ export class FretesController {
       'confirmar': () => {
         if(this.freteService.changeState(action.freteId, 'Confirmada')){
           return {message: 'Confirmada com sucesso'}
+        }
+      },
+      'pagamento': () => {
+        if(this.freteService.changeState(action.freteId, 'Confirmada')){
+          return {message: 'Pagamento inserido com sucesso!'}
         }
       },
     }
