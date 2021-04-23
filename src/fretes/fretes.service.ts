@@ -75,7 +75,8 @@ export class FretesService {
         'state',
         'updatedAt',
         'createdAt',
-        'postponed_frete',
+        'postponed_new_id',
+        'postponed_old_id',
         'deposit_returned',
         'id',
         'customPrice',
@@ -164,14 +165,15 @@ export class FretesService {
     const frete = await this.fretesRepository.findOne({where:{id: idFrete}})
     if(frete){
       frete.state = 'Adiada'
-      frete.postponed_frete = new Date(newDate)
       try {
-        await frete.save()
-        this.fretesRepository.create({
+        const newFretePostponed = await this.fretesRepository.create({
           clientId: frete.clientId,
           prices: frete.prices,
           date: new Date(newDate),
+          postponed_old_id: frete.id,
         }).save()
+        frete.postponed_new_id = newFretePostponed.id
+        await frete.save()
         return true
       } catch (e) {
         return e

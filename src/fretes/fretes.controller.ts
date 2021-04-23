@@ -10,7 +10,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 
 @ApiTags('Fretes')
-// @ApiBearerAuth()
+@ApiBearerAuth()
 @Controller('fretes')
 export class FretesController {
   constructor(
@@ -30,19 +30,19 @@ export class FretesController {
 
   @Get('search')
 	async getOne(@Query() getClientByIdDTO:GetFreteByIdDTO){
-		const frete = await this.freteService.getOne(getClientByIdDTO);
-		return frete?
-		{
-			item:frete,
-			message: 'Cliente encontrado com sucesso',
-		}
-		:
-		{
-			item:frete,
-			message: 'Cliente não encontrado',
-		};
-	}
-
+    if(Object.keys(getClientByIdDTO).length){
+      const frete = await this.freteService.getOne(getClientByIdDTO);
+      return frete && 
+        {
+          item:frete,
+          message: 'Frete encontrado com sucesso',
+        }
+      }
+      return {
+        message: 'Frete não encontrado',
+      }
+    }
+    
   // Adiar Frete
   // Cancelar Frete
   // Confirmar Frete

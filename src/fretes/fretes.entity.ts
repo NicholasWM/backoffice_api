@@ -42,8 +42,11 @@ export class Frete extends BaseEntity{
 	@Column({nullable:false, type: "timestamp"})
 	date:Date
   
-	@Column({nullable:true, type: "timestamp"})
-	postponed_frete:Date
+	@Column({nullable:true, type: "varchar"})
+	postponed_new_id: String
+  
+	@Column({nullable:true, type: "varchar"})
+	postponed_old_id: String
   
 	@OneToMany(type => Frete_Image, frete_image => frete_image.id)
 	images: Frete_Image[];
