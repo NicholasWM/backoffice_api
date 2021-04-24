@@ -183,11 +183,19 @@ export class FretesService {
   }
   async insertPayment({freteId, type, value}:InsertPaymentDTO){
     const paymentTypes = ['debitPaid', 'creditPaid', 'moneyPaid', 'depositPaid']
+<<<<<<< HEAD
     const isValidOptionPaymentType = Number(type) - 1 < paymentTypes.length 
     if(!isValidOptionPaymentType){ return false }
     const frete = await this.fretesRepository.findOne({where:{id: freteId}})
     if(frete){
       frete[paymentTypes[Number(type) - 1]] = Number(value) + Number(frete[paymentTypes[Number(type) - 1]])
+=======
+    const isValidOptionPaymentType = type < paymentTypes.length 
+    if(!isValidOptionPaymentType){ return false }
+    const frete = await this.fretesRepository.findOne({where:{id: freteId}})
+    if(frete){
+      frete[paymentTypes[type - 1]] = Number(value) + Number(frete[paymentTypes[type]])
+>>>>>>> 6e2cfe9de3ab99f76029cbd74cc83a89e660f51d
       try{
         await frete.save()
       }catch(e){
