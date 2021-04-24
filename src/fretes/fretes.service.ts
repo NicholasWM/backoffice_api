@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FreteImagesRepository } from 'src/images/frete-images.repository';
 import { UploadImage, getFiltersSearchFrete, GetBase64ImageFromSystem } from 'src/utils';
-import { CreateFreteDTO, SearchFreteDTO } from './dtos';
+import { CreateFreteDTO, InsertPaymentDTO, SearchFreteDTO } from './dtos';
 import { Frete } from './fretes.entity';
 import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
@@ -177,6 +177,21 @@ export class FretesService {
         return true
       } catch (e) {
         return e
+      }
+    }
+    return false
+  }
+  async insertPayment({freteId, type, value}:InsertPaymentDTO){
+    const paymentTypes = ['debitPaid', 'creditPaid', 'moneyPaid', 'depositPaid']
+    const isValidOptionPaymentType = Number(type) - 1 < paymentTypes.length 
+    if(!isValidOptionPaymentType){ return false }
+    const frete = await this.fretesRepository.findOne({where:{id: freteId}})
+    if(frete){
+      frete[paymentTypes[Number(type) - 1]] = Number(value) + Number(frete[paymentTypes[Number(type) - 1]])
+      try{
+        await frete.save()
+      }catch(e){
+        console.log(e)
       }
     }
     return false
