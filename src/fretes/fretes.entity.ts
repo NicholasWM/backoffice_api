@@ -16,34 +16,37 @@ export class Frete extends BaseEntity{
 	id: string;
 
 	@Column({nullable:true, type: "numeric"})
-	deposit_returned: Number
+	deposit_returned: number
 	
 	@Column({nullable:true, type: "numeric"})
-	discount: Number
+	discount: number
 
 	@Column({nullable:true, type: "numeric", default: 0})
-	creditPaid: Number
+	creditPaid: number
 
 	@Column({nullable:true, type: "numeric", default: 0})
-	depositPaid: Number
+	depositPaid: number
 
 	@Column({nullable:true, type: "numeric", default: 0})
-	debitPaid: Number
+	debitPaid: number
 
 	@Column({nullable:true, type: "numeric", default: 0})
-	moneyPaid: Number
+	moneyPaid: number
 
 	@Column({nullable:true, type: "numeric", default: 0})
-	numberOfPeople: Number
+	numberOfPeople: number
 
 	@Column({nullable:true, type: "numeric"})
-	customPrice: Number
+	customPrice: number
 
 	@Column({nullable:false, type: "timestamp"})
 	date:Date
   
-	@Column({nullable:true, type: "timestamp"})
-	postponed_frete:Date
+	@Column({nullable:true, type: "varchar"})
+	postponed_new_id: String
+  
+	@Column({nullable:true, type: "varchar"})
+	postponed_old_id: String
   
 	@OneToMany(type => Frete_Image, frete_image => frete_image.id)
 	images: Frete_Image[];

@@ -16,7 +16,7 @@ export class InsertPaymentDTO {
 		description:'Number of type of payment. 1 - Debit, 2 - Credit, 3 - Money, 4 - Deposit',
 		required:false
 	})
-  type:Number;
+  type:number;
 
 	@IsNotEmpty()
 	@ApiProperty({
@@ -24,5 +24,5 @@ export class InsertPaymentDTO {
 		description:'Value inserted',
 		required:false
 	})
-  value:Number;
+  value:number;
 }

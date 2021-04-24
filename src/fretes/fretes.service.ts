@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FreteImagesRepository } from 'src/images/frete-images.repository';
 import { UploadImage, getFiltersSearchFrete, GetBase64ImageFromSystem } from 'src/utils';
-import { CreateFreteDTO, SearchFreteDTO } from './dtos';
+import { CreateFreteDTO, InsertPaymentDTO, SearchFreteDTO } from './dtos';
 import { Frete } from './fretes.entity';
 import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
@@ -75,7 +75,8 @@ export class FretesService {
         'state',
         'updatedAt',
         'createdAt',
-        'postponed_frete',
+        'postponed_new_id',
+        'postponed_old_id',
         'deposit_returned',
         'id',
         'customPrice',
@@ -164,17 +165,41 @@ export class FretesService {
     const frete = await this.fretesRepository.findOne({where:{id: idFrete}})
     if(frete){
       frete.state = 'Adiada'
-      frete.postponed_frete = new Date(newDate)
       try {
-        await frete.save()
-        this.fretesRepository.create({
+        const newFretePostponed = await this.fretesRepository.create({
           clientId: frete.clientId,
           prices: frete.prices,
           date: new Date(newDate),
+          postponed_old_id: frete.id,
         }).save()
+        frete.postponed_new_id = newFretePostponed.id
+        await frete.save()
         return true
       } catch (e) {
         return e
+      }
+    }
+    return false
+  }
+  async insertPayment({freteId, type, value}:InsertPaymentDTO){
+    const paymentTypes = ['debitPaid', 'creditPaid', 'moneyPaid', 'depositPaid']
+<<<<<<< HEAD
+    const isValidOptionPaymentType = Number(type) - 1 < paymentTypes.length 
+    if(!isValidOptionPaymentType){ return false }
+    const frete = await this.fretesRepository.findOne({where:{id: freteId}})
+    if(frete){
+      frete[paymentTypes[Number(type) - 1]] = Number(value) + Number(frete[paymentTypes[Number(type) - 1]])
+=======
+    const isValidOptionPaymentType = type < paymentTypes.length 
+    if(!isValidOptionPaymentType){ return false }
+    const frete = await this.fretesRepository.findOne({where:{id: freteId}})
+    if(frete){
+      frete[paymentTypes[type - 1]] = Number(value) + Number(frete[paymentTypes[type]])
+>>>>>>> 6e2cfe9de3ab99f76029cbd74cc83a89e660f51d
+      try{
+        await frete.save()
+      }catch(e){
+        console.log(e)
       }
     }
     return false
