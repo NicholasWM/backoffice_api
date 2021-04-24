@@ -45,9 +45,11 @@ export class FretesController {
 
   @Put('postpone')
 	@UseGuards(AuthGuard())
-  async postpone(@Body(ValidationPipe) action:PostponeFreteDTO){
-    if(this.freteService.postponeDate(action.newDate, action.freteId)){
-      return {message: `Adiada com sucesso para a data: ${new Date(action.newDate).toLocaleDateString()}`}
+  async postpone(@Body(ValidationPipe) postponeFreteDTO:PostponeFreteDTO){
+    if(postponeFreteDTO?.newDate){
+      if(this.freteService.postponeDate(postponeFreteDTO)){
+        return {message: `Adiada com sucesso para a data: ${new Date(postponeFreteDTO?.newDate).toLocaleDateString()}`}
+      }
     }
     return {message: 'Erro ao executar a action!'}
   }
