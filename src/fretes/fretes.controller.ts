@@ -42,11 +42,7 @@ export class FretesController {
         message: 'Frete não encontrado',
       }
     }
-    
-  // Adiar Frete
-  // Cancelar Frete
-  // Confirmar Frete
-  // Inserir pagamento
+
   @Put('postpone')
 	@UseGuards(AuthGuard())
   async postpone(@Body(ValidationPipe) action:PostponeFreteDTO){
@@ -75,8 +71,8 @@ export class FretesController {
   }
 
   @Put('insertPayment')
-  async insertPayment(@Body(ValidationPipe) action:InsertPaymentDTO){
-    if(this.freteService.changeState(action.freteId, 'Confirmada')){
+  async insertPayment(@Body(ValidationPipe) insertPaymentDTO:InsertPaymentDTO){
+    if(this.freteService.insertPayment(insertPaymentDTO)){
       return {message: 'Pagamento inserido com sucesso!'}
     }
     return {message: 'Erro ao executar a action!'}
