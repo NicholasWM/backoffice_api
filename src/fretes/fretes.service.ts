@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FreteImagesRepository } from 'src/images/frete-images.repository';
 import { UploadImage, getFiltersSearchFrete, GetBase64ImageFromSystem } from 'src/utils';
-import { CreateFreteDTO, InsertPaymentDTO, SearchFreteDTO } from './dtos';
+import { CreateFreteDTO, InsertPaymentDTO, PostponeFreteDTO, SearchFreteDTO } from './dtos';
 import { Frete } from './fretes.entity';
 import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
@@ -161,8 +161,8 @@ export class FretesService {
     const freteDataWithImagesBase64 = freteData.map((item, index) => ({...item, images: imagesBase64[index]}))
     return freteDataWithImagesBase64
   }
-  async postponeDate(newDate: string, idFrete: string){
-    const frete = await this.fretesRepository.findOne({where:{id: idFrete}})
+  async postponeDate({freteId, newDate}:PostponeFreteDTO){
+    const frete = await this.fretesRepository.findOne({where:{id: freteId}})
     if(frete){
       frete.state = 'Adiada'
       try {
@@ -183,23 +183,17 @@ export class FretesService {
   }
   async insertPayment({freteId, type, value}:InsertPaymentDTO){
     const paymentTypes = ['debitPaid', 'creditPaid', 'moneyPaid', 'depositPaid']
-<<<<<<< HEAD
     const isValidOptionPaymentType = Number(type) - 1 < paymentTypes.length 
     if(!isValidOptionPaymentType){ return false }
     const frete = await this.fretesRepository.findOne({where:{id: freteId}})
     if(frete){
       frete[paymentTypes[Number(type) - 1]] = Number(value) + Number(frete[paymentTypes[Number(type) - 1]])
-=======
-    const isValidOptionPaymentType = type < paymentTypes.length 
-    if(!isValidOptionPaymentType){ return false }
-    const frete = await this.fretesRepository.findOne({where:{id: freteId}})
-    if(frete){
-      frete[paymentTypes[type - 1]] = Number(value) + Number(frete[paymentTypes[type]])
->>>>>>> 6e2cfe9de3ab99f76029cbd74cc83a89e660f51d
+
       try{
         await frete.save()
       }catch(e){
         console.log(e)
+        return false
       }
     }
     return false
