@@ -11,8 +11,9 @@ import { Frete_Image } from 'src/images/frete-images.entity';
 import { IFreteWithImages } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
-import { In } from 'typeorm';
+import { Between, In } from 'typeorm';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
+import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 
 @Injectable()
 export class FretesService {
@@ -216,6 +217,35 @@ export class FretesService {
     const frete = await this.fretesRepository.findOne(id)
     if(frete){
       return frete
+    }
+    return false
+  }
+
+  async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<any>{
+    const limitOfSchedulingsPerDay = 2
+    const {fullDate, month, year} = busyDatesFreteDTO
+    const initialDate = `${year||new Date().getUTCFullYear()}\\${month || 1}\\${1}`
+    const finalDate = (() => {
+      let date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) : 12, 0)
+      let lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+      return `${date.getFullYear()}\\${Number(month) || 12}\\${lastDay}`
+    })()
+    const fullDateConverted = new Date(fullDate)
+    const fretes = await this.fretesRepository.find({
+      where: fullDate ? {date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate())} : {date: Between(initialDate, finalDate)},
+      select:['date', 'id']
+    })
+    let datesBusy = {}
+    if(fretes){
+      fretes.map(({date, id})=> {
+        const key = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`
+        if(Object.keys(datesBusy).includes(key)){
+          datesBusy[key].push({date,id})
+        }else{
+          datesBusy[key] = [{date, id}]
+        }
+      })
+      return datesBusy
     }
     return false
   }
