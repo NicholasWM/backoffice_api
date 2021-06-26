@@ -9,7 +9,7 @@ export class CreateFreteDTO {
 	clientId: string;
 
 	@ApiProperty({
-		description: "Array of ids of the prices"
+		description: "Array of ids/uuids of the prices"
 	})
 	prices: Array<string>;
 

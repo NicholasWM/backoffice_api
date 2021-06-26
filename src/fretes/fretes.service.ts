@@ -222,7 +222,27 @@ export class FretesService {
     return false 
   }
   async getOne({id}:GetFreteByIdDTO):Promise<any>{
-    const frete = await this.fretesRepository.findOne(id)
+    const frete = await this.fretesRepository.findOne(id,{
+      relations:['prices'],
+      select:[
+        'clientId',
+        'date',
+        'state',
+        'updatedAt',
+        'createdAt',
+        'postponed_new_id',
+        'postponed_old_id',
+        'deposit_returned',
+        'id',
+        'customPrice',
+        'creditPaid',
+        'debitPaid',
+        'depositPaid',
+        'discount',
+        'moneyPaid',
+        'numberOfPeople',
+      ],
+    })
     if(frete){
       return frete
     }
@@ -238,12 +258,13 @@ export class FretesService {
     })()
     const fullDateConverted = new Date(fullDate)
     const fretes = await this.fretesRepository.find({
+      relations:["client"],
       where: 
         fullDate ? 
           {date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate())} 
           :
           {date: Between(initialDate, finalDate)},
-      select:['date', 'id', 'state']
+      select:['date', 'id', 'state', 'boatman', 'client']
     })
     let datesBusy = {}
     let counters:ICounters = {
@@ -266,12 +287,14 @@ export class FretesService {
      }
     )
     if(fretes){
-      fretes.map(({date, id, state})=> {
-        const key = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`
+      fretes.map(({date, id, state, client, boatman})=> {
+        const day = String(date.getDate())
+        const month = String(date.getMonth()+1)
+        const key = `${date.getFullYear()}/${month.length<2 ? "0":""}${month}/${day.length<2 ? "0":""}${day}`
         if(Object.keys(datesBusy).includes(key)){
-          datesBusy[key].push({date,id, state})
+          datesBusy[key].push({date,id, state, client, boatman})
         }else{
-          datesBusy[key] = [{date, id, state}]
+          datesBusy[key] = [{date, id, state, client, boatman}]
         }
       })
       return {dates: datesBusy, counters}
