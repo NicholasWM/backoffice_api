@@ -6,8 +6,7 @@ import { Frete } from './fretes.entity';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 import { PostponeFreteDTO } from './dtos/postpone-frete-dto';
 import { AuthGuard } from '@nestjs/passport';
-
-
+import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 
 @ApiTags('Fretes')
 @ApiBearerAuth()
@@ -26,6 +25,11 @@ export class FretesController {
   @Get()
   async getAll(@Query() searchFreteDTO: SearchFreteDTO):Promise<Frete[]>{
     return await this.freteService.getAll(searchFreteDTO)
+  }
+
+  @Get('busyDates')
+  async busyDates(@Query() busyDatesFreteDTO: BusyDatesFreteDTO):Promise<Frete[]>{
+    return await this.freteService.getBusyDates(busyDatesFreteDTO)
   }
 
   @Get('search')

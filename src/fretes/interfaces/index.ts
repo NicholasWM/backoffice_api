@@ -14,3 +14,26 @@ export interface IFreteWithImages {
   updatedAt: Date,
   images: Frete_Image[],
 }
+
+export interface IFretesPerMonth {
+  'Janeiro'?:[],
+  'Fevereiro'?:[],
+  'Marco'?:[],
+  'Abril'?:[],
+  'Maio'?:[],
+  'Junho'?:[],
+  'Julho'?:[],
+  'Agosto'?:[],
+  'Setembro'?:[],
+  'Outubro'?:[],
+  'Novembro'?:[],
+  'Dezembro'?:[],
+}
+export interface ICounters {
+  'Marcada'?: number,
+  'Cancelada'?: number,
+  'Adiada'?: number,
+  'Confirmada'?: number,
+  'FretesPerMonth': IFretesPerMonth,
+  'FretesThisWeek':  string[],
+}

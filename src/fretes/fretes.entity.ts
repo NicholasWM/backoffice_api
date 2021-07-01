@@ -42,6 +42,9 @@ export class Frete extends BaseEntity{
 	@Column({nullable:false, type: "timestamp"})
 	date:Date
   
+	@Column({nullable:true, type: "varchar", default:'Não definido'})
+	boatman: String
+
 	@Column({nullable:true, type: "varchar"})
 	postponed_new_id: String
   

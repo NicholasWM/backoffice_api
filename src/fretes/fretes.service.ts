@@ -8,12 +8,26 @@ import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
 import { ClientRepository } from 'src/clients/clients.repository';
 import { Frete_Image } from 'src/images/frete-images.entity';
-import { IFreteWithImages } from './interfaces';
+import { ICounters, IFreteWithImages } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
-import { In } from 'typeorm';
+import { Between, In } from 'typeorm';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
-
+import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
+const months = [
+  'Janeiro',
+  'Fevereiro',
+  'Marco',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+]
 @Injectable()
 export class FretesService {
   constructor(
@@ -29,7 +43,6 @@ export class FretesService {
     @InjectRepository(PriceRepository)
     private priceRepository:PriceRepository,
   ){}
-
   // async create(createFreteDTO:CreateFreteDTO): Promise<Frete>{
   async create(createFreteDTO:CreateFreteDTO): Promise<any>{
     const [client, count] = await this.clientRepository.findAndCount({where:{id:createFreteDTO.clientId}})
@@ -61,7 +74,6 @@ export class FretesService {
       }).save()
     }
   }
-
   async getAll(searchFreteDTO:SearchFreteDTO): Promise<Frete[]>{
     const numberOfResults = 30
     let filters = getFiltersSearchFrete(searchFreteDTO)
@@ -95,7 +107,6 @@ export class FretesService {
         numberOfResults
     })
   }
-
   async insertImagesInFrete(insertImagesFreteDTO:InsertImagesFreteDTO): Promise<Boolean>{
     const frete = await this.fretesRepository.findOne({
       where:{
@@ -121,7 +132,6 @@ export class FretesService {
     }
     return false
   }
-
   async getImages(searchFreteDTO: SearchFreteDTO){
     let loadFreteImages = async (fretes: Frete[]) : Promise<loadedFreteImages> => await Promise.all(fretes.map(
       async (frete: Frete) => 
@@ -211,11 +221,84 @@ export class FretesService {
     }
     return false 
   }
-
   async getOne({id}:GetFreteByIdDTO):Promise<any>{
-    const frete = await this.fretesRepository.findOne(id)
+    const frete = await this.fretesRepository.findOne(id,{
+      relations:['prices'],
+      select:[
+        'clientId',
+        'date',
+        'state',
+        'updatedAt',
+        'createdAt',
+        'postponed_new_id',
+        'postponed_old_id',
+        'deposit_returned',
+        'id',
+        'customPrice',
+        'creditPaid',
+        'debitPaid',
+        'depositPaid',
+        'discount',
+        'moneyPaid',
+        'numberOfPeople',
+      ],
+    })
     if(frete){
       return frete
+    }
+    return false
+  }
+  async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<any>{
+    const {fullDate, month, year} = busyDatesFreteDTO
+    const initialDate = `${year||new Date().getUTCFullYear()}\\${month || year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
+    console.log(initialDate)
+    const finalDate = (() => {
+      let date = new Date(year ? Number(year)+1 : new Date().getUTCFullYear(), year ? 12 : month ? Number(month) : 12, year ? 1:0)
+      let lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+      return `${date.getFullYear()}\\${Number(month) || 12}\\${lastDay}`
+    })()
+    const fullDateConverted = new Date(fullDate)
+    const fretes = await this.fretesRepository.find({
+      relations:["client"],
+      where: 
+        fullDate ? 
+          {date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate())} 
+          :
+          {date: Between(initialDate, finalDate)},
+      select:['date', 'id', 'state', 'boatman', 'client']
+    })
+    let datesBusy = {}
+    let counters:ICounters = {
+      'Marcada': 0,
+      'Cancelada': 0,
+      'Adiada': 0,
+      'Confirmada': 0,
+      'FretesPerMonth': {},
+      'FretesThisWeek': [],
+    }
+    fretes.map(({state, date, id}) => {
+      counters[state]+=1
+      let month = months[Number(date.getMonth())]
+      if(state !== 'Cancelada' && state !== 'Adiada'){
+        counters['FretesPerMonth'][month] ? counters['FretesPerMonth'][month].push(id) : counters['FretesPerMonth'][month] = [id]
+        if(date.getMonth() == new Date().getMonth() && (date.getUTCDate() - new Date().getUTCDate()) <= 7){
+          counters['FretesThisWeek'].push(id)
+        }
+      }
+     }
+    )
+    if(fretes){
+      fretes.map(({date, id, state, client, boatman})=> {
+        const day = String(date.getDate())
+        const month = String(date.getMonth()+1)
+        const key = `${date.getFullYear()}/${month.length<2 ? "0":""}${month}/${day.length<2 ? "0":""}${day}`
+        if(Object.keys(datesBusy).includes(key)){
+          datesBusy[key].push({date,id, state, client, boatman})
+        }else{
+          datesBusy[key] = [{date, id, state, client, boatman}]
+        }
+      })
+      return {dates: datesBusy, counters}
     }
     return false
   }
