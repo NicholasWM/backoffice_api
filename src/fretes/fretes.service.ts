@@ -250,9 +250,10 @@ export class FretesService {
   }
   async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<any>{
     const {fullDate, month, year} = busyDatesFreteDTO
-    const initialDate = `${year||new Date().getUTCFullYear()}\\${month || new Date().getMonth() + 1}\\${month ? 1 : new Date().getUTCDate()}`
+    const initialDate = `${year||new Date().getUTCFullYear()}\\${month || year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
+    console.log(initialDate)
     const finalDate = (() => {
-      let date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) : 12, 0)
+      let date = new Date(year ? Number(year)+1 : new Date().getUTCFullYear(), year ? 12 : month ? Number(month) : 12, year ? 1:0)
       let lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
       return `${date.getFullYear()}\\${Number(month) || 12}\\${lastDay}`
     })()

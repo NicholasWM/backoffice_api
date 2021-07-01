@@ -8,8 +8,6 @@ import { PostponeFreteDTO } from './dtos/postpone-frete-dto';
 import { AuthGuard } from '@nestjs/passport';
 import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 
-
-
 @ApiTags('Fretes')
 @ApiBearerAuth()
 @Controller('fretes')
