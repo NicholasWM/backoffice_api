@@ -85,15 +85,21 @@ export const GetBase64ImageFromSystem = async ({imageName, category, dirname}:IG
     const pathImage = !!dirname.length ? 
       `${process.cwd()}/uploads/${category}/${dirname}/${imageName}`: 
       `${process.cwd()}/uploads/${category}/${imageName}` 
+    console.log(pathImage)
     fs.readFile(pathImage, (err, data)=>{
+      console.log(data);
       //error handle
-      if(err) reject(err);
-      //get image file extension name
-      let extensionName = path.extname(pathImage);
-      //convert image file to base64-encoded string
-      let base64Image = Buffer.from(data).toString('base64');
-      //combine all strings
-      let imgSrcString = `data:image/${extensionName.split('.').pop()};base64,${base64Image}`;
-      resolve(imgSrcString)
+      if(err) resolve(String(err));
+      if(data != undefined){
+        //get image file extension name
+        let extensionName = path.extname(pathImage);
+        //convert image file to base64-encoded string
+        let base64Image = Buffer.from(data).toString('base64');
+        //combine all strings
+        let imgSrcString = `data:image/${extensionName.split('.').pop()};base64,${base64Image}`;
+        resolve(imgSrcString)
+      }else{
+        resolve("Arquivo não encontrado!")
+      }
     })
   })

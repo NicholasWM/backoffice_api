@@ -38,6 +38,7 @@ export class AuthService {
 						this.userImagesRepository.create({user, name: String(filename)}).save()
 					}
 					return {id:user.id, name:user.name, email:user.email, token, images: createUserDTO?.photo}
+					// return {id:user.id, name:user.name, email:user.email, token, images: ""}
 				}
 				return {...user, token}
 			}
@@ -47,7 +48,6 @@ export class AuthService {
 
 
 	async signin(credentialsDto:CredentialsDto){
-		// console.log(credentialsDto)
 		const user = await this.userRepository.checkCredentials(credentialsDto);
 		if(user === null){
 			throw new UnauthorizedException('Credenciais Inválidas')
@@ -57,8 +57,8 @@ export class AuthService {
 		}
 		const token = await this.jwtService.sign(jwtPayload)
 		const image = await this.userImagesRepository.find({where:{userId:user.id}})
-		if(image){
-			const photo = await GetBase64ImageFromSystem({imageName: image[0].name, category: 'user', dirname: ''})
+		if(image.length){
+			const photo = await GetBase64ImageFromSystem({imageName: image[0].name, category: 'user', dirname: image[0].userId})
 			return {id:user.id, name:user.name, email:user.email, token, images: photo}
 		}
 		return {id:user.id, name:user.name, email:user.email, token}

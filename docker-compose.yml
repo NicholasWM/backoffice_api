@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  backend:
+    container_name: backoffice_backend
+    restart: always
+    build: .
+    environment:
+      - APP_ENV=development
+      - APP_PORT=9000
+    volumes:
+      - ./src:/var/www/backend/src
+      - ./test:/var/www/backend/test
+      - ./uploads:/var/www/backend/uploads
+    working_dir: /var/www/backend
+    ports:
+      - "9000:3000"
+    links:
+      - backoffice_db_postgres
+      - redis
+    depends_on:
+      - backoffice_db_postgres
+      - redis
+
+  backoffice_db_postgres: # Example Service
+    image: postgres:alpine
+    ports:
+      - "9001:3306"
+    container_name: backoffice_db
+    restart: always
+    environment:
+      POSTGRES_DB: backoffice_db
+      POSTGRES_USER: Nicholas
+      POSTGRES_PASSWORD: minhasenha
+    volumes:
+      - backoffice_api_data:/var/lib/postgresql/data
+    
+  redis: # Example Service
+    container_name: backoffice_api_redis
+    restart: always
+    image: redis:6.0-alpine
+    expose:
+      - "6379"
+    volumes:
+      - backoffice_api_redis_data:/data
+
+  adminer:
+    container_name: 'backoffice_api_adminer'
+    image: adminer
+    restart: always
+    ports:
+      - 9002:8080
+    depends_on: 
+      - backoffice_db_postgres
+
+volumes:
+  backoffice_api_data:
+  backoffice_api_redis_data:
+
+networks:
+  default:
+    external:
+      name: backoffice_api
