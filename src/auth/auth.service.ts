@@ -47,7 +47,6 @@ export class AuthService {
 
 
 	async signin(credentialsDto:CredentialsDto){
-		// console.log(credentialsDto)
 		const user = await this.userRepository.checkCredentials(credentialsDto);
 		if(user === null){
 			throw new UnauthorizedException('Credenciais Inválidas')
@@ -58,7 +57,7 @@ export class AuthService {
 		const token = await this.jwtService.sign(jwtPayload)
 		const image = await this.userImagesRepository.find({where:{userId:user.id}})
 		if(image){
-			const photo = await GetBase64ImageFromSystem({imageName: image[0].name, category: 'user', dirname: ''})
+			const photo = await GetBase64ImageFromSystem({imageName: image[0].name, category: 'user', dirname: user.id})
 			return {id:user.id, name:user.name, email:user.email, token, images: photo}
 		}
 		return {id:user.id, name:user.name, email:user.email, token}
