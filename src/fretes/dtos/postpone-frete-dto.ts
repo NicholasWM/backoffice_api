@@ -10,6 +10,7 @@ export class PostponeFreteDTO {
 	})
   freteId:string;
 
+	@IsNotEmpty()
 	@ApiProperty({
 		default:'',
 		description:'ID do frete que vai ser modificado.',
