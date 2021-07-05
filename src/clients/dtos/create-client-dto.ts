@@ -3,15 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IContact } from '../types';
 
 export class CreateClientDTO {
-	@IsNotEmpty({
-		message: 'Informe um endereço de email',
-	})
-	@IsEmail({},{
-		message: 'Informe um endereço de email válido'
-	})
-	@MaxLength(200,{
-		message: 'O endereço de email deve ter pelo menos 200 caracteres',
-	})
+
 	@ApiProperty({
 		default:'abc@abc.com',
 		description:'User email'

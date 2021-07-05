@@ -29,7 +29,7 @@ services:
     container_name: backoffice_db
     restart: always
     environment:
-      POSTGRES_DB: backoffice_db
+      POSTGRES_DB: backoffice_pp
       POSTGRES_USER: Nicholas
       POSTGRES_PASSWORD: minhasenha
     volumes:
