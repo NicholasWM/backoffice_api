@@ -57,7 +57,7 @@ export class ClientsService {
   }
   
   async update(updateClientDTO: UpdateClientDTO): Promise<Client| false>{
-    let client = await this.clientsRepository.findOne({id:updateClientDTO.clientId})
+    let client = await this.clientsRepository.findOne({id:updateClientDTO.id})
     const keys = ['email', 'name']
     keys.forEach(key=>{
       if(updateClientDTO[key]){

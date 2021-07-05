@@ -3,7 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IContact } from '../types';
 
 export class CreateClientDTO {
-
 	@ApiProperty({
 		default:'abc@abc.com',
 		description:'User email'

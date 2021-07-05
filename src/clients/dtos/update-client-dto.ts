@@ -17,7 +17,7 @@ export class UpdateClientDTO {
 		default:'',
     required: true
 	})
-	clientId: string;
+	id: string;
 
 	@ApiProperty({
 		default:'Abc Client',
