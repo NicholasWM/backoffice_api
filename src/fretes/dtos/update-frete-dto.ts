@@ -19,7 +19,7 @@ export class UpdateFreteDTO {
 		description:'ID do frete que vai ser modificado.',
 		required:true
 	})
-  freteId:string;
+  id:string;
 
 	@ApiProperty({
 		default:'',
