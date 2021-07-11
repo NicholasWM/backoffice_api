@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, MaxLength } from 'class-validator'
+import { IsArray, IsEmail, IsNotEmpty, MaxLength } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateFreteDTO {
@@ -7,6 +7,12 @@ export class CreateFreteDTO {
 		description:"4daa9f36-accd-49d1-8550-41e43f31520d",
 	})
 	clientId: string;
+
+	@ApiProperty({
+		description:"4daa9f36-accd-49d1-8550-41e43f31520d",
+		default:1
+	})
+	boatmanId: string;
 
 	@ApiProperty({
 		description: "Array of ids/uuids of the prices"

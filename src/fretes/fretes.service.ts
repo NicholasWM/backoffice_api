@@ -11,9 +11,11 @@ import { Frete_Image } from 'src/images/frete-images.entity';
 import { ICounters, IFreteWithImages } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
-import { Between, In } from 'typeorm';
+import { Between, Equal, In, Not } from 'typeorm';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
+import { BoatmanRepository } from 'src/boatman/boatman.repository';
+import { GetAvailableBoatmenDTO } from 'src/boatman/dto/get-available-boatmen';
 const months = [
   'Janeiro',
   'Fevereiro',
@@ -40,14 +42,23 @@ export class FretesService {
     @InjectRepository(ClientRepository)
     private clientRepository:ClientRepository,
 
+    @InjectRepository(BoatmanRepository)
+    private boatmanRepository:BoatmanRepository,
+
     @InjectRepository(PriceRepository)
     private priceRepository:PriceRepository,
   ){}
   // async create(createFreteDTO:CreateFreteDTO): Promise<Frete>{
   async create(createFreteDTO:CreateFreteDTO): Promise<any>{
-    const [client, count] = await this.clientRepository.findAndCount({where:{id:createFreteDTO.clientId}})
-    if(count === 0){
+    const [client, countClients] = await this.clientRepository.findAndCount({where:{id:createFreteDTO.clientId}})
+    if(countClients === 0){
       return `Invalid User ID: ${createFreteDTO.clientId}` 
+    }
+    const [boatman, countBoatmen] = createFreteDTO?.boatmanId ? 
+      await this.boatmanRepository.findAndCount({where:{id:Number(createFreteDTO.boatmanId)}}) 
+      : await this.boatmanRepository.findAndCount({where:{id:0}}) 
+    if(createFreteDTO?.boatmanId && countBoatmen === 0){
+      return `Invalid Boatman ID: ${createFreteDTO.boatmanId}` 
     }
     if(createFreteDTO.prices){
       const catchInvalidPricesID = () => createFreteDTO.prices.filter((priceId, index)=> !prices.map(({id})=> id).includes(priceId))
@@ -61,8 +72,9 @@ export class FretesService {
         return `Invalid Prices: ${invalidPrices}` 
       }
       return this.fretesRepository.create({
+        boatmanId:createFreteDTO.boatmanId,
         clientId: createFreteDTO.clientId,
-        date: new Date(createFreteDTO.date),
+        date: new Date(new Date(createFreteDTO.date).toLocaleDateString().split('/').reverse().join('/')),
         prices: prices
       }).save()
     }
@@ -78,10 +90,11 @@ export class FretesService {
     const numberOfResults = 30
     let filters = getFiltersSearchFrete(searchFreteDTO)
     return await this.fretesRepository.find({
-      relations:['prices'],
+      relations:['prices', 'boatman'],
       order:
         {date:'ASC'},
       select:[
+        'boatman',
         'clientId',
         'date',
         'state',
@@ -223,7 +236,7 @@ export class FretesService {
   }
   async getOne({id}:GetFreteByIdDTO):Promise<any>{
     const frete = await this.fretesRepository.findOne(id,{
-      relations:['prices'],
+      relations:['prices', 'boatman'],
       select:[
         'clientId',
         'date',
@@ -241,6 +254,7 @@ export class FretesService {
         'discount',
         'moneyPaid',
         'numberOfPeople',
+        'boatman',
       ],
     })
     if(frete){
@@ -258,7 +272,7 @@ export class FretesService {
     })()
     const fullDateConverted = new Date(fullDate)
     const fretes = await this.fretesRepository.find({
-      relations:["client"],
+      relations:["client", 'boatman'],
       where: 
         fullDate ? 
           {date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate())} 
@@ -300,5 +314,25 @@ export class FretesService {
       return {dates: datesBusy, counters}
     }
     return false
+  }
+  async boatmenAvailable(getAvailableBoatmenDTO: GetAvailableBoatmenDTO){
+    let res = await this.fretesRepository.find({
+      where:{
+        date:new Date(getAvailableBoatmenDTO?.date),
+        state: Not(In(['Cancelada', 'Adiada']))
+      },
+      select:['boatmanId']
+    })
+    
+    return await this.boatmanRepository.find({
+      where: {
+        id:Not(In(
+          res
+          .filter(({boatmanId})=>Number(boatmanId) != Number(1))
+          .map(({boatmanId})=>boatmanId)
+        ))
+      },
+      select:['id', 'name']
+    })
   }
 }

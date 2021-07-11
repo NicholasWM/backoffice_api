@@ -21,7 +21,12 @@ export class ClientsService {
   async create(createClientDTO: CreateClientDTO): Promise<Client>{
     const client = await this.clientsRepository.createClient(createClientDTO)
     createClientDTO.contacts.forEach(async contact => {
-      await this.contactsRepository.create({clientId: client.id, info: contact.info, status: true, description: contact.desc}).save()
+      await this.contactsRepository.create({
+        clientId: client.id,
+        info: contact.info,
+        status: true,
+        description: contact.desc
+      }).save()
     })
     return client
   }

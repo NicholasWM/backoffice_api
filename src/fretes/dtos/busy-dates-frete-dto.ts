@@ -8,6 +8,12 @@ export class BusyDatesFreteDTO {
 	busy: boolean;
 	
 	@ApiProperty({
+		default: true,
+		required:false,
+	})
+	allYearData: boolean;
+	
+	@ApiProperty({
 		description:'27',
 		required:false
 	})
