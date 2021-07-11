@@ -1,3 +1,4 @@
+import { Boatman } from 'src/boatman/entities/boatman.entity';
 import { Client } from 'src/clients/clients.entity';
 import { Price } from 'src/prices/entities/price.entity';
 import {
@@ -42,8 +43,8 @@ export class Frete extends BaseEntity{
 	@Column({nullable:false, type: "timestamp"})
 	date:Date
   
-	@Column({nullable:true, type: "varchar", default:'Não definido'})
-	boatman: String
+	// @Column({nullable:true, type: "varchar", default:'Não definido'})
+	// boatman: String
 
 	@Column({nullable:true, type: "varchar"})
 	postponed_new_id: String
@@ -61,12 +62,22 @@ export class Frete extends BaseEntity{
 	@JoinColumn({ name: "clientId" })
   client: Client;
 
+	@Column({nullable:true, type: "varchar"})
+	boatmanId: string;
+
+	@ManyToOne(type => Boatman, boatman => boatman.id, {nullable:false})
+	@JoinColumn({ name: "boatmanId" })
+  boatman: Boatman;
+
 	@Column({nullable:true, type: "varchar", length:100, default:'Marcada'})
 	state:IState
 
   @ManyToMany(type => Price, {eager: true})
   @JoinTable()
   prices: Price[];
+
+	@Column({nullable:true, type: "varchar"})
+	frete_evaluation: string;
 
 	@CreateDateColumn()
 	createdAt: Date;

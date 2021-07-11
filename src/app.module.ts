@@ -12,6 +12,7 @@ import { PricesModule } from './prices/prices.module';
 import { ParkingModule } from './parking/parking.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { ProductsModule } from './products/products.module';
+import { BoatmanModule } from './boatman/boatman.module';
 @Module({
   imports: [
     AuthModule,
@@ -28,7 +29,8 @@ import { ProductsModule } from './products/products.module';
     PricesModule,
     ParkingModule,
     PurchasingModule,
-    ProductsModule
+    ProductsModule,
+    BoatmanModule
   ],
   controllers: [],
   providers: [],

@@ -7,6 +7,7 @@ import { FreteImagesRepository } from 'src/images/frete-images.repository';
 import { ClientRepository } from 'src/clients/clients.repository';
 import { PassportModule } from '@nestjs/passport';
 import { PriceRepository } from 'src/prices/prices.repository';
+import { BoatmanRepository } from 'src/boatman/boatman.repository';
 
 @Module({
   imports:[
@@ -14,11 +15,13 @@ import { PriceRepository } from 'src/prices/prices.repository';
       FretesRepository,
       FreteImagesRepository,
       ClientRepository,
-      PriceRepository
+      PriceRepository,
+      BoatmanRepository
     ]),
     PassportModule.register({defaultStrategy: 'jwt'})
   ],
   providers: [FretesService],
-  controllers: [FretesController]
+  controllers: [FretesController],
+  exports:[FretesService]
 })
 export class FretesModule {}
