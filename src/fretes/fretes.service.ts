@@ -74,7 +74,7 @@ export class FretesService {
       return this.fretesRepository.create({
         boatmanId:createFreteDTO.boatmanId,
         clientId: createFreteDTO.clientId,
-        date: new Date(new Date(createFreteDTO.date).toLocaleDateString().split('/').reverse().join('/')),
+        date: new Date(createFreteDTO.date),
         prices: prices
       }).save()
     }

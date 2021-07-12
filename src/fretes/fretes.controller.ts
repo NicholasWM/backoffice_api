@@ -18,6 +18,8 @@ export class FretesController {
   
   @Post()
   async createFrete(@Body(ValidationPipe) createFreteDTO: CreateFreteDTO): Promise<ReturnClientDTO> {
+    console.log(new Date(createFreteDTO.date));
+    
     const frete = await this.freteService.create(createFreteDTO)
     return {frete, message:''}
   }
