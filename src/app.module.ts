@@ -13,8 +13,15 @@ import { ParkingModule } from './parking/parking.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { ProductsModule } from './products/products.module';
 import { BoatmanModule } from './boatman/boatman.module';
+import { TelegramClientModule } from './telegram-client/telegram-client.module';
+import { TelegramUserModule } from './telegram-user/telegram-user.module';
+import { TelegramModule } from './telegram/telegram.module';
+import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal:true
+    }),
     AuthModule,
     TypeOrmModule.forRoot(typeOrmConfig),
     MulterModule.register({
@@ -30,7 +37,10 @@ import { BoatmanModule } from './boatman/boatman.module';
     ParkingModule,
     PurchasingModule,
     ProductsModule,
-    BoatmanModule
+    BoatmanModule,
+    TelegramClientModule,
+    TelegramUserModule,
+    TelegramModule
   ],
   controllers: [],
   providers: [],

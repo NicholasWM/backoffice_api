@@ -5,10 +5,11 @@ import {
 	PrimaryGeneratedColumn,
 	Column,
 	CreateDateColumn,
-	UpdateDateColumn, OneToMany
+	UpdateDateColumn, OneToMany, JoinColumn, OneToOne
 } from 'typeorm'
 import * as bcrypt from 'bcrypt'
 import { User_Image } from '../images/user-images.entity';
+import { TelegramUser } from 'src/telegram-user/entities/telegram-user.entity';
 @Entity()
 @Unique(['email', 'username'])
 export class User extends BaseEntity{
@@ -35,6 +36,10 @@ export class User extends BaseEntity{
 
 	@Column({nullable:false, default:true})
 	status: boolean;
+
+	@OneToOne(() => TelegramUser, telegram => telegram.user) // specify inverse side as a second parameter
+	@JoinColumn()
+	telegram: TelegramUser;
 
 	@Column({nullable: false})
 	salt: string;

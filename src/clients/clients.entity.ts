@@ -1,5 +1,6 @@
 import { Contact } from 'src/contacts/entities/contact.entity';
 import { Parking } from 'src/parking/entities/parking.entity';
+import { TelegramClient } from 'src/telegram-client/entities/telegram-client.entity';
 import {
 	Entity,
 	Unique,
@@ -10,6 +11,7 @@ import {
 	UpdateDateColumn, 
 	OneToMany,
 	JoinColumn,
+	OneToOne,
 } from 'typeorm'
 import { Frete } from '../fretes/fretes.entity';
 @Entity()
@@ -35,6 +37,10 @@ export class Client extends BaseEntity{
 	@JoinColumn({name:'Parkings'})
 	Parkings: Parking[];
 	
+	@OneToOne(() => TelegramClient, telegram => telegram.user) // specify inverse side as a second parameter
+	@JoinColumn()
+	telegram: TelegramClient;
+
 	// @Column({nullable:true, type: "varchar", length:50})
 	// negative_cancellations:string
 

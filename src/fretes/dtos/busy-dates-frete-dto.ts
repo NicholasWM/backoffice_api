@@ -11,23 +11,35 @@ export class BusyDatesFreteDTO {
 		default: true,
 		required:false,
 	})
-	allYearData: boolean;
+	pageSelected?: number;
+
+	@ApiProperty({
+		default: true,
+		required:false,
+	})
+	numberOfResults?: number;
+
+	@ApiProperty({
+		default: true,
+		required:false,
+	})
+	allYearData?: boolean;
 	
 	@ApiProperty({
 		description:'27',
 		required:false
 	})
-  fullDate:string;
+  fullDate?:string;
 	
 	@ApiProperty({
 		description:'10',
 		required:false
 	})
-  month:string;
+  month?:string;
 	
 	@ApiProperty({
 		description:'2022',
 		required:false
 	})
-  year: string | null;
+  year?: string | null;
 }

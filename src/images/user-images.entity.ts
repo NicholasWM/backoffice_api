@@ -18,6 +18,9 @@ export class User_Image extends BaseEntity{
 	@Column({nullable:true, type: "varchar"})
 	name: string;
 
+	@Column({nullable:true, type: "varchar"})
+	dirname: string;
+	
 	@Column({nullable:false, type: "varchar"})
 	userId: string;
 

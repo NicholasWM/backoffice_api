@@ -263,22 +263,43 @@ export class FretesService {
     return false
   }
   async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<any>{
-    const {fullDate, month, year} = busyDatesFreteDTO
-    const initialDate = `${year||new Date().getUTCFullYear()}\\${month || year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
+    const {fullDate, month, year, numberOfResults, pageSelected} = busyDatesFreteDTO
+    const initialDate = `${year||new Date().getUTCFullYear()}\\${month ? month : year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
     const finalDate = (() => {
-      let date = new Date(year ? Number(year)+1 : new Date().getUTCFullYear(), year ? 12 : month ? Number(month) : 12, year ? 1:0)
-      let lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-      return `${date.getFullYear()}\\${Number(month) || 12}\\${lastDay}`
+      let date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) - 1 : year ? 11 : 12, year ? 1:0)
+      let lastDay = new Date(date.getFullYear(), Number(month) || date.getMonth(), 0).getDate()
+      // console.log(date);
+      // console.log(`${date.getFullYear()}/${Number(month) || 11}/${lastDay}`);
+      return `${date.getFullYear()}/${Number(month) || 11}/${lastDay}`
     })()
+    function paginateResponse(data,page,limit) {
+      const [result, total]=data;
+      const lastPage=Math.ceil(total/limit);
+      const nextPage=page+1 >lastPage ? null :page+1;
+      const prevPage=page-1 < 1 ? null :page-1;
+      return {
+        statusCode: 'success',
+        count: total,
+        currentPage: page,
+        nextPage: nextPage,
+        prevPage: prevPage,
+        lastPage: lastPage,
+      }
+    }
     const fullDateConverted = new Date(fullDate)
-    const fretes = await this.fretesRepository.find({
+    const take = numberOfResults || 10
+    const page = pageSelected || 1;
+    const skip= (page-1) * take ;
+    const [fretes, total] = await this.fretesRepository.findAndCount({
       relations:["client", 'boatman'],
       where: 
         fullDate ? 
           {date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate())} 
           :
           {date: Between(initialDate, finalDate)},
-      select:['date', 'id', 'state', 'boatman', 'client']
+      select:['date', 'id', 'state', 'boatman', 'client'],
+      take: take,
+      skip: skip
     })
     let datesBusy = {}
     let counters:ICounters = {
@@ -311,7 +332,7 @@ export class FretesService {
           datesBusy[key] = [{date, id, state, client, boatman}]
         }
       })
-      return {dates: datesBusy, counters}
+      return {dates: datesBusy, counters, paginate:paginateResponse([fretes, total] ,page, 6)}
     }
     return false
   }
