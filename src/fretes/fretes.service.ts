@@ -16,6 +16,7 @@ import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 import { BoatmanRepository } from 'src/boatman/boatman.repository';
 import { GetAvailableBoatmenDTO } from 'src/boatman/dto/get-available-boatmen';
+import { GetOneResponseDTO } from './dtos/get-one-response-dto';
 const months = [
   'Janeiro',
   'Fevereiro',
@@ -234,9 +235,9 @@ export class FretesService {
     }
     return false 
   }
-  async getOne({id}:GetFreteByIdDTO):Promise<any>{
+  async getOne({id}:GetFreteByIdDTO):Promise<GetOneResponseDTO>{
     const frete = await this.fretesRepository.findOne(id,{
-      relations:['prices', 'boatman'],
+      relations:['prices', 'boatman', 'client'],
       select:[
         'clientId',
         'date',
@@ -255,12 +256,13 @@ export class FretesService {
         'moneyPaid',
         'numberOfPeople',
         'boatman',
+        'client',
       ],
     })
-    if(frete){
-      return frete
+    return {
+      message: frete ? "Encontrado com  Sucesso" : "Não foi possivel encontrar",
+      frete:frete
     }
-    return false
   }
   async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<any>{
     const {fullDate, month, year, numberOfResults, pageSelected} = busyDatesFreteDTO

@@ -13,5 +13,6 @@ import { ContactRepository } from 'src/contacts/contacts.repository';
   ],
   providers: [ClientsService],
   controllers: [ClientsController],
+  exports:[ClientsService]
 })
 export class ClientsModule {}

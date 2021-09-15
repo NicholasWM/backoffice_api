@@ -4,16 +4,19 @@ import { FretesService } from 'src/fretes/fretes.service';
 import { Telegraf  } from 'telegraf'
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types'
 import { convertCodesOfEmojisInEmojis, emojis, generateOptions, parseResponseEmojis, startOptions } from './helpers'
-
+import {formatString} from '../utils/regex'
+import {dateMonthDayYearWrited} from '../utils/dateHelper'
+import { ClientsService } from 'src/clients/clients.service';
 @Injectable()
 export class TelegramService implements OnModuleInit{
   constructor(
     private fretesService: FretesService,
+    private clientsService: ClientsService,
     private configService: ConfigService
   ) {}
   private token=this.configService.get<string>('TELEGRAM_TOKEN');
-  
-  public bot = new Telegraf(this.token)
+  // public bot = new Telegraf(this.token);
+  public bot = new Telegraf("1806857753:AAGrSlh_1m3jtQ2VZ3KO1QCa6aGlED_BgtA");
   sendMessage(chatId:string|number,message:string):void{
     this.bot.telegram.sendMessage(chatId,message)
   }    
@@ -27,7 +30,8 @@ export class TelegramService implements OnModuleInit{
 
   onModuleInit() {
     let bookPages = 100;
-
+    console.log(process.env.TELEGRAM_TOKEN);
+    
     function getPagination( current, maxpage ) {
       let keys = [];
       if (current>1) keys.push({ text: `«1`, callback_data: '1' });
@@ -112,12 +116,13 @@ export class TelegramService implements OnModuleInit{
           Promise
             .resolve(consultas.Consulta[ctx.message.text]())
             .then(res => {
-              // console.log(Object.keys(res?.dates))
+              console.log(res?.dates)
               let message = Object.keys(res?.dates)
                 .map(date => 
                   `${date}:\n ${res?.dates?.[date]
-                              ?.map(data => 
-                                `\n\t\t\t${data?.state}\n\t\t\t\t\t\tBarqueiro: ${data?.boatman?.name}\n\t\t\t\t\t\tCliente: ${data?.client?.name}\n`).join('')}\n`
+                    ?.map(data => 
+                      `\tData: ${data?.state}\n\t Barqueiro: ${data?.boatman?.name}\n\t Cliente: ${data?.client?.name}\n\t /sched${data?.id?.split('-').join('')}
+                      \n `).join('')}`
               ).join('')
               ctx.reply(message, {
                 reply_markup:{
@@ -130,12 +135,33 @@ export class TelegramService implements OnModuleInit{
             })
           console.log(Object.keys(consultas.Consulta[ctx.message.text]));
           
-          
-        }else if(ctx.message.text === 'Consulta'){
+        
+        }
+        else if(ctx.message.text.includes('clien')){
+          console.log(ctx.message.text)
+          const clienID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(6))
+          console.log(clienID);
+          this.clientsService.getOne({id:clienID})
+          .then((client) => {
+            console.log(client);
+            
+            let message=`Informações do Cliente\n\nNome:${client?.name}\n\nContatos:\n${client.contacts.map(contact=> `${contact?.description} - ${contact?.info}\n`)}\n`
+            ctx.reply(message,{})
+          })
+        }
+        else if(ctx.message.text.includes('sched')){
+          const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(6))
+          console.log(schedID);
+          this.fretesService.getOne({id:schedID})
+          .then(({frete}) => {
+            let message = `\tDADOS DO AGENDAMENTO:\n\n${dateMonthDayYearWrited(frete.date.toISOString())}\n\nCliente:${frete.client.name}\n\nBarqueiro:${frete.boatman?.name}\n\nStatus:${frete.state}\n\nDeposito: R$${frete.depositPaid}\n\nNumero de Pessoas Combinado: ${frete.numberOfPeople}\n\nTabela de Preços:${frete.customPrice || frete?.prices?.map(price => `\n\n\t${price.description}\n\tPreço: R$${price.value}\n`)}\n\nCliente:\nNome:${frete.client.name}\n\n\n Clique abaixo para consultar dados do Cliente:\n/clien${frete.clientId.split('-').join('')}`
+            ctx.reply(message,{})
+          })
+        }
+        else if(ctx.message.text === 'Consulta'){
           ctx.reply('asd', {
             reply_markup:{
               keyboard:Object.keys(consultas.Consulta).map(key => ([{text:key}]))
-              
             }
           })
         }else{
