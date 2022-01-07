@@ -1,6 +1,14 @@
 import { Frete_Image } from "src/images/frete-images.entity";
+import {  PaginateResponse } from "src/utils/pagination";
+import { Frete } from "../fretes.entity";
 import { IState } from "../types";
 
+export type DatesBusy = {[name:string]: [Pick<Frete, 'date'| 'id' | 'state' | 'client' | 'boatman'>]}
+export interface GetBusyDatesResponse{
+  dates: DatesBusy
+  counters:ICounters;
+  paginate: PaginateResponse;
+}
 export interface IFreteWithImages {
   id: string,
   prices: any,

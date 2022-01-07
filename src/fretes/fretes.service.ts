@@ -8,15 +8,18 @@ import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
 import { ClientRepository } from 'src/clients/clients.repository';
 import { Frete_Image } from 'src/images/frete-images.entity';
-import { ICounters, IFreteWithImages } from './interfaces';
+import { DatesBusy, GetBusyDatesResponse, ICounters, IFreteWithImages } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
-import { Between, Equal, In, Not } from 'typeorm';
+import { Between, getConnection, getManager, In, Not } from 'typeorm';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 import { BoatmanRepository } from 'src/boatman/boatman.repository';
 import { GetAvailableBoatmenDTO } from 'src/boatman/dto/get-available-boatmen';
 import { GetOneResponseDTO } from './dtos/get-one-response-dto';
+import { GetAvailableDaysDTO } from './dtos/get-available-days.dto';
+import { dateFrequency, getAllDaysInMonth } from 'src/utils/dateHelper';
+import { handlePaginateResponse } from 'src/utils/pagination';
 const months = [
   'Janeiro',
   'Fevereiro',
@@ -31,6 +34,18 @@ const months = [
   'Novembro',
   'Dezembro',
 ]
+
+interface GetAvailableDatesResponse {
+  'Domingo': string[];
+  'Segunda': string[];
+  'Terça': string[];
+  'Quarta': string[];
+  'Quinta': string[];
+  'Sexta': string[];
+  'Sabado': string[];
+}
+
+
 @Injectable()
 export class FretesService {
   constructor(
@@ -89,7 +104,7 @@ export class FretesService {
   }
   async getAll(searchFreteDTO:SearchFreteDTO): Promise<Frete[]>{
     const numberOfResults = 30
-    let filters = getFiltersSearchFrete(searchFreteDTO)
+    const filters = getFiltersSearchFrete(searchFreteDTO)
     return await this.fretesRepository.find({
       relations:['prices', 'boatman'],
       order:
@@ -121,7 +136,7 @@ export class FretesService {
         numberOfResults
     })
   }
-  async insertImagesInFrete(insertImagesFreteDTO:InsertImagesFreteDTO): Promise<Boolean>{
+  async insertImagesInFrete(insertImagesFreteDTO:InsertImagesFreteDTO): Promise<boolean>{
     const frete = await this.fretesRepository.findOne({
       where:{
         id:insertImagesFreteDTO.freteId
@@ -131,8 +146,8 @@ export class FretesService {
       const clientName = (await this.clientRepository.findOne({where:{id:frete.clientId}, select:['name']}))?.name
       if(insertImagesFreteDTO?.images?.length){
         for (let index = 0; index < insertImagesFreteDTO?.images.length; index++) {
-          let dirname = `${frete.date.toLocaleDateString().split('/').join('')} - ${clientName} - ${frete.id}`
-          let filename = await UploadImage({
+          const dirname = `${frete.date.toLocaleDateString().split('/').join('')} - ${clientName} - ${frete.id}`
+          const filename = await UploadImage({
             imageData: insertImagesFreteDTO?.images[index],
             categoryName: 'frete',
             dirname
@@ -264,30 +279,17 @@ export class FretesService {
       frete:frete
     }
   }
-  async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<any>{
+  async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<GetBusyDatesResponse>{
     const {fullDate, month, year, numberOfResults, pageSelected} = busyDatesFreteDTO
     const initialDate = `${year||new Date().getUTCFullYear()}\\${month ? month : year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
     const finalDate = (() => {
-      let date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) - 1 : year ? 11 : 12, year ? 1:0)
-      let lastDay = new Date(date.getFullYear(), Number(month) || date.getMonth(), 0).getDate()
+      const date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) - 1 : year ? 11 : 12, year ? 1:0)
+      const lastDay = new Date(date.getFullYear(), Number(month) || date.getMonth(), 0).getDate()
       // console.log(date);
       // console.log(`${date.getFullYear()}/${Number(month) || 11}/${lastDay}`);
       return `${date.getFullYear()}/${Number(month) || 11}/${lastDay}`
     })()
-    function paginateResponse(data,page,limit) {
-      const [result, total]=data;
-      const lastPage=Math.ceil(total/limit);
-      const nextPage=page+1 >lastPage ? null :page+1;
-      const prevPage=page-1 < 1 ? null :page-1;
-      return {
-        statusCode: 'success',
-        count: total,
-        currentPage: page,
-        nextPage: nextPage,
-        prevPage: prevPage,
-        lastPage: lastPage,
-      }
-    }
+    
     const fullDateConverted = new Date(fullDate)
     const take = numberOfResults || 10
     const page = pageSelected || 1;
@@ -303,8 +305,8 @@ export class FretesService {
       take: take,
       skip: skip
     })
-    let datesBusy = {}
-    let counters:ICounters = {
+    const datesBusy:DatesBusy  = {} as DatesBusy
+    const counters:ICounters = {
       'Marcada': 0,
       'Cancelada': 0,
       'Adiada': 0,
@@ -334,9 +336,23 @@ export class FretesService {
           datesBusy[key] = [{date, id, state, client, boatman}]
         }
       })
-      return {dates: datesBusy, counters, paginate:paginateResponse([fretes, total] ,page, 6)}
+      return {
+        dates: datesBusy,
+        counters,
+        paginate:
+          handlePaginateResponse(
+            {
+              data:{
+                result:fretes,
+                total
+              },
+              page,
+              limit:6
+            }
+          )
+      }
     }
-    return false
+    return null
   }
   async boatmenAvailable(getAvailableBoatmenDTO: GetAvailableBoatmenDTO){
     let res = await this.fretesRepository.find({
@@ -357,5 +373,48 @@ export class FretesService {
       },
       select:['id', 'name']
     })
+  }
+  async getAvailableDates(getAvailableDaysDTO:GetAvailableDaysDTO):Promise<GetAvailableDatesResponse>{
+    const daysOfTheMonth = getAllDaysInMonth(getAvailableDaysDTO.month, getAvailableDaysDTO.year)
+    const firstDate = new Date(daysOfTheMonth[0]) > new Date() ? new Date(daysOfTheMonth[0]).toISOString():new Date().toISOString()
+    const [result, count] = await this.fretesRepository.findAndCount({
+      select:['date'],
+      where:{
+        state:In(["Marcada", "Confirmada"]),
+        date: Between(new Date(firstDate), new Date(daysOfTheMonth[daysOfTheMonth.length-1]))
+      }
+    })
+    console.log(new Date(firstDate), new Date(daysOfTheMonth[daysOfTheMonth.length-1]));
+    
+    const frequencyOfDays = dateFrequency<Frete>(result)
+    let listOfDays = daysOfTheMonth.filter(
+        day => 
+          Object.keys(frequencyOfDays)
+            .includes(day) && frequencyOfDays[day] > 1? false:true
+      )
+    const datasLivres = {
+      'Domingo': [],
+      'Segunda':[],
+      'Terça':[],
+      'Quarta':[],
+      'Quinta':[],
+      'Sexta':[],
+      'Sabado':[],
+      'Final de Semana':[],
+      'Dias de Semana':[],
+    }
+    listOfDays = listOfDays.filter(day => new Date(day) > new Date())
+    listOfDays.forEach(data => {
+      datasLivres[Object.keys(datasLivres)[new Date(data).getDay()]].push(data)})
+    
+    datasLivres['Final de Semana'].push(datasLivres['Sabado'])
+    datasLivres['Final de Semana'].push(datasLivres['Domingo'])
+    datasLivres['Dias de Semana'].push(datasLivres['Segunda'])
+    datasLivres['Dias de Semana'].push(datasLivres['Terça'])
+    datasLivres['Dias de Semana'].push(datasLivres['Quarta'])
+    datasLivres['Dias de Semana'].push(datasLivres['Quinta'])
+    datasLivres['Dias de Semana'].push(datasLivres['Sexta'])
+
+    return getAvailableDaysDTO['typeOfDays'] ? datasLivres[getAvailableDaysDTO['typeOfDays']] : datasLivres
   }
 }
