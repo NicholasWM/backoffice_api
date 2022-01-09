@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, Res, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { RolesGuard } from 'src/auth/roles.guards';
 import { Client } from './clients.entity';
 import { ClientsService } from './clients.service';
@@ -16,12 +17,25 @@ export class ClientsController {
   @Post()
 	async create(
 		@Body(ValidationPipe) createClientDTO:CreateClientDTO,
-	): Promise<ReturnClientDTO>{
+		@Res() res:Response
+	): Promise<Response<ReturnClientDTO>>{
+		const contactAlreadyExists = await this.clientsService.findByContact({contacts: createClientDTO.contacts});
+		if(contactAlreadyExists){
+			return res.status(HttpStatus.CONFLICT).json({
+				message: 'Contato já existe',
+			});
+		}
 		const client = await this.clientsService.create(createClientDTO);
-		return {
-			client,
-			message: 'Cliente criado com sucesso',
-		};
+		if(client){
+			return res.status(HttpStatus.CREATED).json({
+				client,
+				message: 'Cliente criado com sucesso',
+			})
+		}
+		return res.status(HttpStatus.BAD_REQUEST).json({
+			message: 'Erro ao criar o Cliente',
+		})
+
 	}
 	@Get()
 	async getWithFilters(

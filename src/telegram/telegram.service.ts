@@ -3,12 +3,12 @@ import { ConfigService } from "@nestjs/config"
 import { FretesService } from 'src/fretes/fretes.service';
 import { Telegraf } from 'telegraf'
 import * as TT from "telegram-typings";
-import { convertCodesOfEmojisInEmojis, emojis, generateOptions, parseResponseEmojis, startOptions } from './helpers'
+import { convertCodesOfEmojisInEmojis, generateOptions, startOptions } from './helpers'
 import { formatString } from '../utils/regex'
 import { dateMonthDayYearWrited, dateMonthYearWrited } from '../utils/dateHelper'
 import { ClientsService } from 'src/clients/clients.service';
-import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
-import { DatesBusy, GetBusyDatesResponse } from 'src/fretes/interfaces';
+import { GetBusyDatesResponse } from 'src/fretes/interfaces';
+import { IContact } from 'src/clients/types';
 const days = [
   "Domingo",
   "Segunda",
@@ -27,10 +27,10 @@ interface MenuResponseParameters {
 }
 
 type IEventTelegram = {
-  name:string, condition:Function
+  name: string, condition: Function
 }
 // interface ITelegramEvent{
-  
+
 // }
 // class TelegramEvent implements ITelegramEvent{
 //   private name: string
@@ -51,6 +51,58 @@ interface MenuResponse {
     }
   };
 }
+type ParseVCardResponse = {
+  "version":"2.1",
+  "fn":"1",
+  "tel":{
+    "meta":{
+      "TYPE":string
+    },
+    "value":string[]
+  }[]
+}
+function parseVCard(input):ParseVCardResponse {
+  const Re1 = /^(version|fn|title|org):(.+)$/i;
+  const Re2 = /^([^:;]+);([^:]+):(.+)$/;
+  const ReKey = /item\d{1,2}\./;
+  const fields = {} as ParseVCardResponse;
+
+  input.split(/\r\n|\r|\n/).forEach(function (line) {
+    let results, key;
+
+    if (Re1.test(line)) {
+      results = line.match(Re1);
+      key = results[1].toLowerCase();
+      fields[key] = results[2];
+    } else if (Re2.test(line)) {
+      results = line.match(Re2);
+      key = results[1].replace(ReKey, '').toLowerCase();
+
+      const meta = {};
+      results[2].split(';')
+        .map(function (p, i) {
+          const match = p.match(/([a-z]+)=(.*)/i);
+          if (match) {
+            return [match[1], match[2]];
+          } else {
+            return ["TYPE" + (i === 0 ? "" : i), p];
+          }
+        })
+        .forEach(function (p) {
+          meta[p[0]] = p[1];
+        });
+
+      if (!fields[key]) fields[key] = [];
+
+      fields[key].push({
+        meta: meta,
+        value: results[3].split(' ').join('').split('-').join('').split(';')
+      })
+    }
+  });
+
+  return fields;
+};
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -74,6 +126,7 @@ export class TelegramService implements OnModuleInit {
 
   onModuleInit() {
     const bookPages = 100;
+
     function getPagination(current, maxpage) {
       const keys = [];
       if (current > 1) keys.push({ text: `«1`, callback_data: '1' });
@@ -87,17 +140,34 @@ export class TelegramService implements OnModuleInit {
         }
       };
     }
-    this.bot.use(async (ctx, next)=> {
-      console.log("Middleware", ctx.message.from)
-      console.log("From", ctx.from)
-      return next()
-    })
+    // this.bot.use(async (ctx, next)=> {
+    //   console.log("Middleware", ctx.message.from)
+    //   console.log("From", ctx.from)
+    //   return next()
+    // })
+    
     this.bot.on('callback_query', (message) => {
       const pageNumber = message.callbackQuery.data
       message.editMessageText(`${pageNumber} \n `, getPagination(parseInt(message.callbackQuery.data), bookPages));
       return
     })
+    this.bot.on('contact', async (ctx) => {
+      console.dir(ctx.message.contact)
+      const { first_name, user_id, phone_number, last_name } = ctx.message.contact
+      const vCard = parseVCard(JSON.parse(JSON.stringify(ctx.message.contact)).vcard)
+      const contacts: Pick<IContact, "desc" | "info">[] = vCard.tel.map((contact) => ({desc: contact.meta.TYPE, info: contact.value[0]}))
+      const client = await this.clientsService.create({
+        contacts,
+        name: first_name,
+      })
+     console.log(client)
+     ctx.reply(JSON.stringify(client))
+      // this.clientsService.create()
+    })
     this.bot.on('text', async (ctx) => {
+      this.bot
+     console.log(ctx.message.text)
+     console.log(JSON.stringify(await ctx.tg.getUpdates(),null, 2))
       const getFretes = (month: string, year: string) => this.fretesService.getBusyDates({ busy: true, month, year })
         .then(result => result)
       const getMonthAfterOrLaterCurrentMonth = (numberOfMonths, later = true) => {
@@ -124,7 +194,7 @@ export class TelegramService implements OnModuleInit {
           // default: (data) => `\tEstado: ${data?.state}\n\tBarqueiro: ${data?.boatman?.name}\n\tCliente: ${data?.client?.name}\n\t/sched${data?.id?.split('-').join('')}\n\n\n`
         },
         copyPasteAvailableDates: {
-          default: (dates, dayName:string) => {
+          default: (dates, dayName: string) => {
             const message = `
           **🟢 Datas Disponiveis para *${dayName.toUpperCase()}* em ${new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(dates[0]))}: 🟢**\n\n${dates.map(
               date => (`\t\t\t*🎣📆  ${new Intl.DateTimeFormat('pt-br', { month: '2-digit', day: '2-digit' }).format(new Date(date))
@@ -147,7 +217,7 @@ export class TelegramService implements OnModuleInit {
         daySchedulingsResume: {
           default: (fretes: GetBusyDatesResponse, dateEn: string) => {
             const message = [
-              new Intl.DateTimeFormat("pt-br", { day:'2-digit', month: 'long', year: "numeric", weekday: 'long' }).format(new Date(dateEn)).toLocaleUpperCase(),
+              new Intl.DateTimeFormat("pt-br", { day: '2-digit', month: 'long', year: "numeric", weekday: 'long' }).format(new Date(dateEn)).toLocaleUpperCase(),
               `\n\nResumo:,`,
               `Marcada: ${fretes.counters?.Marcada},`,
               `Cancelada: ${fretes.counters?.Cancelada}`,
@@ -158,7 +228,7 @@ export class TelegramService implements OnModuleInit {
               return `
               ${fretes.dates[key].map(
                 scheduling => {
-                  message.push(`*${index+1}. Cliente: ${scheduling.client.name}*`)
+                  message.push(`*${index + 1}. Cliente: ${scheduling.client.name}*`)
                   message.push(`Status: ${scheduling.state}`)
                   message.push(`Dados do Cliente:\n${makeLinks('clien', scheduling.client.id)}\n`)
                   message.push(`Dados do Agendamento:\n${makeLinks('sched', scheduling.id)}\n\n\n`)
@@ -361,11 +431,11 @@ export class TelegramService implements OnModuleInit {
           this.fretesService.getBusyDates({ fullDate: dateEn, busy: false })
             .then(fretes => {
               ctx.reply(defaultMessages.daySchedulingsResume.default(fretes, dateEn), {
-                parse_mode:'Markdown',
+                parse_mode: 'Markdown',
                 reply_markup: {
                   keyboard: [
                     [{ text: `Pedido de Agendamento - ${dateBr}` }],
-                    [{ text: `Ver Datas Livres - ${dateBr.split('/')[1]}/${dateBr.split('/')[2]} - ${new Intl.DateTimeFormat('pt-br', {month:'long'}).format(new Date(dateEn))}` }],
+                    [{ text: `Ver Datas Livres - ${dateBr.split('/')[1]}/${dateBr.split('/')[2]} - ${new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(dateEn))}` }],
                     [{ text: `Datas Livres` }],
                   ]
                 }
@@ -376,19 +446,18 @@ export class TelegramService implements OnModuleInit {
         else if (ctx.message.text.includes("Verificar disponibilidade: ")) {
           const day = ctx.message.text.split(':')[1].split('-')[0].trim()
           const [month, year] = ctx.message.text.split('-')[1].trim().split('/')
-          console.log(day, month, year);
-          
+
           this.fretesService.getAvailableDates({ month: Number(month), year: Number(year) })
             .then((response) => {
               const responseData = Object.keys(response).find(key => key.toUpperCase() === day.toUpperCase())
               const monthName = new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(response[responseData][0]))
-              
+
               ctx.reply(
                 defaultMessages.copyPasteAvailableDates.default(response[responseData], day)
                 , {
                   parse_mode: 'MarkdownV2',
                   reply_markup: {
-                    keyboard: [[{text: `Ver Datas Livres - ${month}/${year} - ${monthName}`}],...response[responseData].map(day => {
+                    keyboard: [[{ text: `Ver Datas Livres - ${month}/${year} - ${monthName}` }], ...response[responseData].map(day => {
                       const dayBrFormat = []
                       dayBrFormat.push(day.split('/')[1])
                       dayBrFormat.push(day.split('/')[0])
@@ -409,11 +478,13 @@ export class TelegramService implements OnModuleInit {
 
           ctx.reply('Qual dia?', {
             reply_markup: {
-              keyboard: [[{text:"Datas Livres"}], ...days.map(day => [{ text: `Verificar disponibilidade: ${day} - ${month}/${year}` }])]
+              keyboard: [[{ text: "Datas Livres" }], ...days.map(day => [{ text: `Verificar disponibilidade: ${day} - ${month}/${year}` }])]
             }
           })
         }
-
+        else if (ctx.message.text.includes("Pedido de Agendamento - ")) {
+          ctx.reply("Qual o contato do Cliente?")
+        }
         else if (Object.keys(menu).includes(ctx.message.text)) {
           const { message, parameters, handleReplyMarkup } = menu[ctx.message.text]
           ctx.reply(message, {

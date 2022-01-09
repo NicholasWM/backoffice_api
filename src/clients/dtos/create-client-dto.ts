@@ -7,7 +7,7 @@ export class CreateClientDTO {
 		default:'abc@abc.com',
 		description:'User email'
 	})
-	email: string;
+	email?: string;
 
 	@IsNotEmpty({
 		message: 'Informe o nome do usuario'
