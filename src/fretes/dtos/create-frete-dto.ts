@@ -1,5 +1,6 @@
 import { IsArray, IsEmail, IsNotEmpty, MaxLength } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger';
+import { IState } from '../types';
 
 export class CreateFreteDTO {
 	@IsNotEmpty()
@@ -27,4 +28,9 @@ export class CreateFreteDTO {
 
 	@ApiProperty()
   customPrice:number;
+
+	@ApiProperty({
+		default:'Marcada'
+	})
+  state?:IState;
 }

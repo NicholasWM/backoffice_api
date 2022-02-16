@@ -1,3 +1,4 @@
+import { TelegramUserMessage } from 'src/telegram-user-messages/entities/telegram-user-message.entity';
 import { User } from 'src/users/user.entity';
 import {
 	Entity,
@@ -6,37 +7,44 @@ import {
 	PrimaryGeneratedColumn,
 	Column,
 	CreateDateColumn,
-	UpdateDateColumn, OneToMany, OneToOne, JoinColumn
+	UpdateDateColumn, OneToMany, OneToOne, JoinColumn, ManyToOne
 } from 'typeorm'
 
 @Entity()
-@Unique(['telegramId', 'phoneNumber'])
+@Unique(['telegram_id', 'phone_number'])
 export class TelegramUser extends BaseEntity {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({ nullable: false, type: "varchar", unique: true })
-	telegramId: string
+	@Column({ nullable: true, type: "varchar", unique: true })
+	telegram_id: number
 
-	@Column({ nullable: false, type: "varchar", length: 200 })
-	firstname: string
+	@Column({ nullable: true, type: "varchar", length: 200 })
+	first_name: string
 
-	@Column({ nullable: false, type: "varchar", unique: true })
-	phoneNumber: string
+	@Column({ nullable: true, type: "varchar", length: 200 })
+	last_name: string
 
-	@Column({ nullable: false, type: "varchar", length: 200, unique: true })
+	@Column({ nullable: true, type: "varchar", unique: true })
+	phone_number: string
+
+	@Column({ nullable: true, type: "varchar", length: 200, unique: true })
 	username: string
 
-	@Column({ nullable: false, type: "boolean" })
-	isBot: boolean
+	@Column({ nullable: true, type: "boolean" })
+	is_bot: boolean
 
-	@Column({ nullable: false, type: "varchar", length: 200 })
-	languageCode: string
+	@Column({ nullable: true, type: "varchar", length: 200 })
+	language_code: string
 
-	@OneToOne(() => User, user => user.telegram)
+	@OneToOne(() => User, user => user.telegram.id)
+	@JoinColumn()
 	user: User
-
-	@CreateDateColumn()
+	
+	@OneToMany(type => TelegramUserMessage, TelegramUserMessage => TelegramUserMessage.id)
+	messages: TelegramUserMessage[];
+	
+  @CreateDateColumn()
 	createdAt: Date;
 
 	@UpdateDateColumn()

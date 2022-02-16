@@ -19,6 +19,10 @@ export class PricesService {
     return this.priceRepository.find()
   }
 
+  findAllActiveIds() {
+    return this.priceRepository.find({where:{status:true}, select:['id']})
+  }
+
   findOne(id: number) {
     return this.priceRepository.find({where:{id}})
   }

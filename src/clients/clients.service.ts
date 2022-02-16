@@ -28,18 +28,24 @@ export class ClientsService {
     
     if (!contact) {
       const client = await this.clientsRepository.createClient(createClientDTO)
-      createClientDTO.contacts.forEach(async contact => {
-        await this.contactsRepository.create({
+      const contacts = await Promise.all(createClientDTO.contacts.map(async contact => {
+        return await this.contactsRepository.create({
           clientId: client.id,
           info: contact.info,
           status: true,
           description: contact.desc
         }).save()
-      })
+      }))
+      client.contacts = contacts
       return client
     }
     
     return false
+  }
+
+  async getContactsByClientId(id: string){
+    const contacts = await this.contactsRepository.find({where:{clientId: id}})
+    return contacts
   }
 
   async findByContact(findClientByContactDTO: FindClientByContactDTO): Promise<Client| false> {
@@ -55,6 +61,7 @@ export class ClientsService {
       return false
     }
     const client = await this.clientsRepository.findOne({
+      select:['email', 'name', 'id'],
       where:{
         id: contact.clientId
       }
@@ -93,7 +100,7 @@ export class ClientsService {
   }
 
   async update(updateClientDTO: UpdateClientDTO): Promise<Client | false> {
-    let client = await this.clientsRepository.findOne({ id: updateClientDTO.id })
+    const client = await this.clientsRepository.findOne({ id: updateClientDTO.id })
     const keys = ['email', 'name']
     keys.forEach(key => {
       if (updateClientDTO[key]) {

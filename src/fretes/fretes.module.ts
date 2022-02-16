@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { FretesService } from './fretes.service';
 import { FretesController } from './fretes.controller';
 import { FretesRepository } from './fretes.repository';
@@ -8,9 +8,12 @@ import { ClientRepository } from 'src/clients/clients.repository';
 import { PassportModule } from '@nestjs/passport';
 import { PriceRepository } from 'src/prices/prices.repository';
 import { BoatmanRepository } from 'src/boatman/boatman.repository';
+import { TelegramModule } from 'src/telegram/telegram.module';
 
 @Module({
   imports:[
+    // TelegramModule,
+    forwardRef(() => TelegramModule),
     TypeOrmModule.forFeature([
       FretesRepository,
       FreteImagesRepository,

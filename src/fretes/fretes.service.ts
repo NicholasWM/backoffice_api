@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FreteImagesRepository } from 'src/images/frete-images.repository';
 import { UploadImage, getFiltersSearchFrete, GetBase64ImageFromSystem } from 'src/utils';
@@ -11,7 +11,7 @@ import { Frete_Image } from 'src/images/frete-images.entity';
 import { DatesBusy, GetBusyDatesResponse, ICounters, IFreteWithImages } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
-import { Between, getConnection, getManager, In, Not } from 'typeorm';
+import { Between, getConnection, getManager, In, Not, Raw } from 'typeorm';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 import { BoatmanRepository } from 'src/boatman/boatman.repository';
@@ -20,6 +20,7 @@ import { GetOneResponseDTO } from './dtos/get-one-response-dto';
 import { GetAvailableDaysDTO } from './dtos/get-available-days.dto';
 import { dateFrequency, getAllDaysInMonth } from 'src/utils/dateHelper';
 import { handlePaginateResponse } from 'src/utils/pagination';
+import { TelegramService } from 'src/telegram/telegram.service';
 const months = [
   'Janeiro',
   'Fevereiro',
@@ -45,10 +46,22 @@ interface GetAvailableDatesResponse {
   'Sabado': string[];
 }
 
+const orderDates = (a,b) => {
+  if (new Date(a) > new Date(b)) {
+    return 1;
+  }
+  if (new Date(a) < new Date(b)) {
+    return -1;
+  }
+  // a must be equal to b
+  return 0;
+}
 
 @Injectable()
 export class FretesService {
   constructor(
+
+
     @InjectRepository(FretesRepository)
     private fretesRepository:FretesRepository,
 
@@ -65,7 +78,7 @@ export class FretesService {
     private priceRepository:PriceRepository,
   ){}
   // async create(createFreteDTO:CreateFreteDTO): Promise<Frete>{
-  async create(createFreteDTO:CreateFreteDTO): Promise<any>{
+  async create(createFreteDTO:CreateFreteDTO): Promise<Frete | string>{
     const [client, countClients] = await this.clientRepository.findAndCount({where:{id:createFreteDTO.clientId}})
     if(countClients === 0){
       return `Invalid User ID: ${createFreteDTO.clientId}` 
@@ -87,10 +100,13 @@ export class FretesService {
       if(invalidPrices.length){
         return `Invalid Prices: ${invalidPrices}` 
       }
+      // this.telegramService.sendActionToAllUsers("criou um Pedido de Agendamento", this.defaultMessages.frete.default(newFrete), ctx.from.id, ctx.from.first_name)
+
       return this.fretesRepository.create({
         boatmanId:createFreteDTO.boatmanId,
         clientId: createFreteDTO.clientId,
         date: new Date(createFreteDTO.date),
+        state: createFreteDTO.state,
         prices: prices
       }).save()
     }
@@ -98,7 +114,8 @@ export class FretesService {
       return this.fretesRepository.create({
         clientId: createFreteDTO.clientId,
         date: new Date(createFreteDTO.date),
-        customPrice: createFreteDTO.customPrice
+        customPrice: createFreteDTO.customPrice,
+        state: createFreteDTO.state,
       }).save()
     }
   }
@@ -162,7 +179,7 @@ export class FretesService {
     return false
   }
   async getImages(searchFreteDTO: SearchFreteDTO){
-    let loadFreteImages = async (fretes: Frete[]) : Promise<loadedFreteImages> => await Promise.all(fretes.map(
+    const loadFreteImages = async (fretes: Frete[]) : Promise<loadedFreteImages> => await Promise.all(fretes.map(
       async (frete: Frete) => 
         await this.freteImagesRepository.find({
           where:{
@@ -172,21 +189,21 @@ export class FretesService {
             {createdAt:'ASC'},
         })
       ))
-    let joinFretesWithEachImagesData = (fretesImages:loadedFreteImages): IFreteWithImages[] => 
+    const joinFretesWithEachImagesData = (fretesImages:loadedFreteImages): IFreteWithImages[] => 
       (fretesImages).map(
         (images:Frete_Image[], index: number): IFreteWithImages => (
           {...fretes[index], images}
         )
       )
     const numberOfResults = 10
-    let filters = getFiltersSearchFrete(searchFreteDTO)
-    let fretes = await this.fretesRepository.find({
+    const filters = getFiltersSearchFrete(searchFreteDTO)
+    const fretes = await this.fretesRepository.find({
       where: filters,
       skip: searchFreteDTO?.page * numberOfResults || 0,
       take: numberOfResults
     })
     type loadedFreteImages = Array<Array<Frete_Image>>
-    let fretesImagesLoaded = await loadFreteImages(fretes)
+    const fretesImagesLoaded = await loadFreteImages(fretes)
     const convertObjectTo64Image = 
       (freteList:IFreteWithImages[])=>
         freteList.map((frete:IFreteWithImages)=> Promise.all(frete.images?.map(
@@ -213,7 +230,10 @@ export class FretesService {
         }).save()
         frete.postponed_new_id = newFretePostponed.id
         await frete.save()
-        return true
+        return {
+          postponedScheduling: frete,
+          newFretePostponed
+        }
       } catch (e) {
         return e
       }
@@ -280,7 +300,7 @@ export class FretesService {
     }
   }
   async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<GetBusyDatesResponse>{
-    const {fullDate, month, year, numberOfResults, pageSelected} = busyDatesFreteDTO
+    const {fullDate, month, year, numberOfResults, pageSelected, weekday} = busyDatesFreteDTO
     const initialDate = `${year||new Date().getUTCFullYear()}\\${month ? month : year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
     const finalDate = (() => {
       const date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) - 1 : year ? 11 : 12, year ? 1:0)
@@ -291,29 +311,52 @@ export class FretesService {
     })()
     
     const fullDateConverted = new Date(fullDate)
-    const take = numberOfResults || 10
+    const take = weekday ? 100 : numberOfResults || 10
+    console.log("take   ", take);
+    
     const page = pageSelected || 1;
     const skip= (page-1) * take ;
-    const [fretes, total] = await this.fretesRepository.findAndCount({
+    // eslint-disable-next-line prefer-const
+    let [fretes, total] = await this.fretesRepository.findAndCount({
       relations:["client", 'boatman'],
+      order: {date:'ASC'},
       where: 
         fullDate ? 
           {date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate())} 
           :
           {date: Between(initialDate, finalDate)},
-      select:['date', 'id', 'state', 'boatman', 'client'],
+      // select:['date', 'id', 'state', 'boatman', 'client', ],
       take: take,
-      skip: skip
+      skip: weekday?0:skip
     })
+
     const datesBusy:DatesBusy  = {} as DatesBusy
     const counters:ICounters = {
       'Marcada': 0,
       'Cancelada': 0,
+      'Pedido de Agendamento': 0,
       'Adiada': 0,
       'Confirmada': 0,
       'FretesPerMonth': {},
       'FretesThisWeek': [],
     }
+    if(weekday){
+      fretes = fretes.filter(({state, date, id}) => {
+        return weekday.find( element => {
+          return element.toUpperCase() === new Intl.DateTimeFormat('pt-br', {weekday:'long'}).format(new Date(date)).toUpperCase()
+        })
+       })
+       total = fretes.length
+      fretes = fretes.filter((data,index) => {
+        console.log("page ", page);
+        
+          if(page === 1){
+            return index < numberOfResults * Number(page)
+          }
+          return index < numberOfResults * Number(page) && index >= numberOfResults * Number(page - 1) 
+       })
+    }
+    
     fretes.map(({state, date, id}) => {
       counters[state]+=1
       let month = months[Number(date.getMonth())]
@@ -323,19 +366,21 @@ export class FretesService {
           counters['FretesThisWeek'].push(id)
         }
       }
-     }
+    }
     )
     if(fretes){
       fretes.map(({date, id, state, client, boatman})=> {
         const day = String(date.getDate())
         const month = String(date.getMonth()+1)
         const key = `${date.getFullYear()}/${month.length<2 ? "0":""}${month}/${day.length<2 ? "0":""}${day}`
+        
         if(Object.keys(datesBusy).includes(key)){
-          datesBusy[key].push({date,id, state, client, boatman})
+          datesBusy[key].push({date, id, state, client, boatman})
         }else{
           datesBusy[key] = [{date, id, state, client, boatman}]
         }
       })
+      console.log(fretes.length, total)
       return {
         dates: datesBusy,
         counters,
@@ -346,8 +391,8 @@ export class FretesService {
                 result:fretes,
                 total
               },
-              page,
-              limit:6
+              page: Number(page),
+              limit:weekday ? numberOfResults : Number(take)
             }
           )
       }
@@ -358,7 +403,7 @@ export class FretesService {
     let res = await this.fretesRepository.find({
       where:{
         date:new Date(getAvailableBoatmenDTO?.date),
-        state: Not(In(['Cancelada', 'Adiada']))
+        state: Not(In(['Cancelada', 'Adiada', 'Pedido de Agendamento']))
       },
       select:['boatmanId']
     })
@@ -380,7 +425,7 @@ export class FretesService {
     const [result, count] = await this.fretesRepository.findAndCount({
       select:['date'],
       where:{
-        state:In(["Marcada", "Confirmada"]),
+        state:In(["Marcada", "Confirmada", "Pedido de Agendamento"]),
         date: Between(new Date(firstDate), new Date(daysOfTheMonth[daysOfTheMonth.length-1]))
       }
     })
@@ -394,27 +439,41 @@ export class FretesService {
       )
     const datasLivres = {
       'Domingo': [],
-      'Segunda':[],
-      'Terça':[],
-      'Quarta':[],
-      'Quinta':[],
-      'Sexta':[],
-      'Sabado':[],
-      'Final de Semana':[],
-      'Dias de Semana':[],
+      'Segunda-feira':[],
+      'Terça-feira':[],
+      'Quarta-feira':[],
+      'Quinta-feira':[],
+      'Sexta-feira':[],
+      'Sábado':[],
+      'Finais de semana':[],
+      'Dias de semana':[],
     }
     listOfDays = listOfDays.filter(day => new Date(day) > new Date())
     listOfDays.forEach(data => {
       datasLivres[Object.keys(datasLivres)[new Date(data).getDay()]].push(data)})
     
-    datasLivres['Final de Semana'].push(datasLivres['Sabado'])
-    datasLivres['Final de Semana'].push(datasLivres['Domingo'])
-    datasLivres['Dias de Semana'].push(datasLivres['Segunda'])
-    datasLivres['Dias de Semana'].push(datasLivres['Terça'])
-    datasLivres['Dias de Semana'].push(datasLivres['Quarta'])
-    datasLivres['Dias de Semana'].push(datasLivres['Quinta'])
-    datasLivres['Dias de Semana'].push(datasLivres['Sexta'])
+    datasLivres['Finais de semana'].push(...datasLivres['Sábado'])
+    datasLivres['Finais de semana'].push(...datasLivres['Domingo'])
+    datasLivres['Dias de semana'].push(...datasLivres['Segunda-feira'])
+    datasLivres['Dias de semana'].push(...datasLivres['Terça-feira'])
+    datasLivres['Dias de semana'].push(...datasLivres['Quarta-feira'])
+    datasLivres['Dias de semana'].push(...datasLivres['Quinta-feira'])
 
+    datasLivres['Dias de semana'].push(...datasLivres['Sexta-feira'])
+    datasLivres['Dias de semana'].sort(orderDates)
+    datasLivres['Finais de semana'].sort(orderDates)
     return getAvailableDaysDTO['typeOfDays'] ? datasLivres[getAvailableDaysDTO['typeOfDays']] : datasLivres
+  }
+
+  async verifyIfDateIsAvailable(date:string) {
+      const [fretes, count] = await this.fretesRepository.findAndCount({
+        where:{
+          date: new Date(date),
+          state: Not(In(['Cancelada', 'Adiada'])),
+        },
+        relations:['boatman', 'client'],
+        select: ['boatman', 'client', 'id', 'state']
+      })
+      return {fretes, count}
   }
 }

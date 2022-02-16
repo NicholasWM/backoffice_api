@@ -37,7 +37,7 @@ export class User extends BaseEntity{
 	@Column({nullable:false, default:true})
 	status: boolean;
 
-	@OneToOne(() => TelegramUser, telegram => telegram.user) // specify inverse side as a second parameter
+	@OneToOne(() => TelegramUser, telegram => telegram.user.id) // specify inverse side as a second parameter
 	@JoinColumn()
 	telegram: TelegramUser;
 

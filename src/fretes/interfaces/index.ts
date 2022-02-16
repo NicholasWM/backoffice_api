@@ -3,7 +3,8 @@ import {  PaginateResponse } from "src/utils/pagination";
 import { Frete } from "../fretes.entity";
 import { IState } from "../types";
 
-export type DatesBusy = {[name:string]: [Pick<Frete, 'date'| 'id' | 'state' | 'client' | 'boatman'>]}
+export type DateBusy = Pick<Frete, 'date'| 'id' | 'state' | 'client' | 'boatman'>
+export type DatesBusy = {[name:string]: DateBusy[]}
 export interface GetBusyDatesResponse{
   dates: DatesBusy
   counters:ICounters;
@@ -39,6 +40,7 @@ export interface IFretesPerMonth {
 }
 export interface ICounters {
   'Marcada'?: number,
+  'Pedido de Agendamento'?: number,
   'Cancelada'?: number,
   'Adiada'?: number,
   'Confirmada'?: number,

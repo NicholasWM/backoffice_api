@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, ValidationPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, ValidationPipe, Query, Inject, forwardRef } from '@nestjs/common';
 import { BoatmanService } from './boatman.service';
 import { CreateBoatmanDto } from './dto/create-boatman.dto';
 import { UpdateBoatmanDto } from './dto/update-boatman.dto';
@@ -12,6 +12,8 @@ import { GetAvailableBoatmenDTO } from './dto/get-available-boatmen';
 export class BoatmanController {
   constructor(
     private readonly boatmanService: BoatmanService,
+
+    @Inject(forwardRef(()=> FretesService))
     private readonly fretesService: FretesService
 
   ) {}

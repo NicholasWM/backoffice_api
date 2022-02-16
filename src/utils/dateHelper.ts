@@ -101,7 +101,13 @@ export const dateMonthDayYearWrited = (date:string) => {
 }
 export const dateMonthYearWrited = (date:string) => {
     let [day, month, dayNumber, year] = new Date(date).toDateString().split(' ')
+    if(new Date(date).toDateString() == 'Invalid Date'){
+      console.log("Invalid: ", date);
+      
+      return ''
+    }
     return `${date.split('/')[0]}/${year} - ${translatorMessages['app.months.'+ month]['pt']}`
+    // return `${date.split('/')[0]}/${year} - ${new Intl.DateTimeFormat('pt-br', {month:'long'}).format(new Date(date))}`
 }
 
 export const getAllDaysInMonth = (month, year) => Array.from(
