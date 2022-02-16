@@ -26,6 +26,7 @@ import { Boatman } from 'src/boatman/entities/boatman.entity';
 import { TelegrafContext } from 'telegraf/typings/context';
 import { JwtService } from '@nestjs/jwt';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
+import { IState } from 'src/fretes/types';
 
 const daysHifen = [
   "Domingo",
@@ -68,7 +69,8 @@ type MessageTypes = 'client' |
   'connectTelegram' |
   'calendarView' |
   'dateOfRequest' |
-  'freteLink'
+  'freteLink' |
+  'schedulingRequest'
 
 type IDefaultMessages = {
   [type in Partial<MessageTypes>]: {
@@ -86,7 +88,7 @@ interface ISendActionToAllUsers {
   name:string
 }
 
-type ActionCallbackName = 'ALL_MONTH_SCHEDULINGS' | 'ONE_MONTH_SCHEDULINGS'
+type ActionCallbackName = 'ALL_MONTH_SCHEDULINGS' | 'ONE_MONTH_SCHEDULINGS' | 'ALL_SCHEDULINGS_REQUESTS'
 interface IGenerateActions {
   action: ActionCallbackName,
   numberOfResults: number,
@@ -249,7 +251,7 @@ export class TelegramService implements OnModuleInit {
         message.push(`${stateColor[data?.state]}  Status: ${data?.state}  ${stateColor[data?.state]}\n`)
         message.push(data?.boatman ? `⛴️  Barqueiro: ${data?.boatman?.name}  ⛴️\n` : "")
         message.push(data?.client ? `🎣  Cliente: ${data?.client?.name}  🎣\n` : "")
-        message.push(`ℹ️  Dados do Agendamento  ℹ️\n${makeLinks('sched', data.id)}\n\n`)
+        message.push(`ℹ️  Dados do Agendamento  ℹ️\n${makeLinks('sched', data.id)}`)
         return message.join('')
       }
     },
@@ -285,9 +287,32 @@ export class TelegramService implements OnModuleInit {
             return priceMessage.join('')
           }).join('------------------')}
           `)
-        message.push('\n==========\n\n')
+        message.push('\n==========\n')
         message.push(`\n🔎👇  Consultar dados do Cliente  👇🔎`)
-        message.push(` \n/clien${frete.clientId.split('-').join('')}`)
+        message.push(`\n/clien${frete.clientId.split('-').join('')}`)
+
+
+        type TActionToDoInMessage = {
+          [type in Partial<IState>]?: (msg: string[]) => void
+        }
+        const modifyMessagePerActionType:TActionToDoInMessage = {
+          'Confirmada': (msg)=> {
+            msg.push(`\n\nClique para cancelar o agendamento:\n`)
+            msg.push(`\n❌${makeLinks('cancelsch',frete.id)}\n`)
+          },
+          'Marcada': (msg)=> {
+            msg.push(`\n\nClique para confirmar o agendamento:\n`)
+            msg.push(`\n✅${makeLinks('confirmsch',frete.id)}`)
+            msg.push(`\n\nClique para cancelar o agendamento:\n`)
+            msg.push(`\n❌${makeLinks('cancelsch',frete.id)}\n`)
+          },
+          'Pedido de Agendamento': (msg)=> {
+            msg.push(`\n\nJá marcou na agenda?`)
+            msg.push(`\nClique para concluir o Pedido de Agendamento:\n`)
+            msg.push(`\n${makeLinks('booksch',frete.id)}\n`)
+          },
+        }
+        modifyMessagePerActionType[frete.state] != undefined && modifyMessagePerActionType[frete.state](message)
         return message.join('')
       }
     },
@@ -395,6 +420,10 @@ export class TelegramService implements OnModuleInit {
     },
     dateOfRequest: {
       default: ()=> `\n========================================\n📌  Dados consultados em ${new Intl.DateTimeFormat('pt-br', { day: '2-digit', year: 'numeric', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date())}  📌\n========================================`
+    },
+    schedulingRequest:{
+      default: (frete: Frete)=> `Pedidos de Agendamento\n${this.defaultMessages.frete}\n Já marcou na agenda?\n Clique para concluir o Pedido de Agendamento: /booksch${frete.id}\n\n`,
+      noResults: ""
     }
   }
 
@@ -621,6 +650,63 @@ export class TelegramService implements OnModuleInit {
             const fretes: DateBusy[] = response.dates[date] as any
             return this.defaultMessages.calendarView.default(fretes)
           })
+          message.push(this.defaultMessages.dateOfRequest.default())
+          message.push('\n')
+          return ctx.editMessageText(message.join('\n'), {
+            reply_markup: {
+              inline_keyboard: menu
+            },
+          });
+        }
+        if (action === 'ALL_SCHEDULINGS_REQUESTS') {
+
+          const {fretes, paginate} = await this.fretesService.getSchedulingRequests({numberOfResults, pageSelected:goToPage});
+          const lastPage = Math.ceil(paginate.count / numberOfResults)
+          const menu: InlineKeyboardButton[][] = [[]]
+          
+          Number(paginate.prevPage) >= 2
+            && menu[0].push(
+              {
+                text: `<< 1`,
+                callback_data: this.generate_actions({
+                  numberOfResults,
+                  action,
+                  goToPage: 1
+                })
+              })
+          paginate.prevPage
+            && menu[0].push(
+              {
+                text: `<  ${String(paginate.prevPage)}`,
+                callback_data: this.generate_actions({
+                  numberOfResults,
+                  action,
+                  goToPage: paginate.prevPage
+                })
+              })
+
+          paginate.nextPage
+            && menu[0].push(
+              {
+                text: `${String(paginate.nextPage)}  >`,
+                callback_data: this.generate_actions({
+                  numberOfResults,
+                  action,
+                  goToPage: paginate.nextPage
+                })
+              })
+          paginate.nextPage
+            && lastPage > paginate.nextPage && menu[0].push(
+              {
+                text: `${String(lastPage)}  >>`,
+                callback_data: this.generate_actions({
+                  numberOfResults,
+                  action,
+                  goToPage: Math.ceil(paginate.count / numberOfResults)
+                })
+              })
+          const message = fretes.map(frete => this.defaultMessages.frete.default(frete))
+
           message.push(this.defaultMessages.dateOfRequest.default())
           message.push('\n')
           return ctx.editMessageText(message.join('\n'), {
@@ -911,9 +997,64 @@ export class TelegramService implements OnModuleInit {
           const clienID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(6))
           this.clientsService.getOne({ id: clienID })
             .then((client) => {
-              const message = `Informações do Cliente\n\nNome:${client?.name}\n\nContatos:\n${client.contacts.map(contact => `${contact?.description} - ${contact?.info}\n`)}\n`
+              // const message = `Informações do Cliente\n\nNome:${client?.name}\n\nContatos:\n${client.contacts.map(contact => `${contact?.description} - ${contact?.info}\n`)}\n`
               return ctx.reply(this.defaultMessages.client.default(client, client.contacts), {})
             })
+        }
+        else if (ctx.message.text.substr(0, 11).includes('confirmsch')) {
+
+          const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(11))
+          if(!await this.fretesService.changeState(schedID, 'Confirmada')){
+            return ctx.reply('Erro ao executar a ação')
+          }
+          await this.sendActionToAllUsers(
+            {
+              action: `confirmou um agendamento ✅`,
+              moreDetails: 'freteLink',
+              detailsParams: [schedID],
+              name: ctx.from.first_name,
+              telegram_id: ctx.from?.id
+            }
+          )
+          return ctx.reply(`✅ Confirmada com sucesso!\n\n Clique aqui para ver os detalhes do agendamento:\n\n ${makeLinks('sched',schedID)}`)
+          
+        }
+        else if (ctx.message.text.substr(0, 10).includes('cancelsch')) {
+
+          const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(10))
+          if(!await this.fretesService.changeState(schedID, 'Cancelada')){
+            return ctx.reply('Erro ao executar a ação')
+          }
+          await this.sendActionToAllUsers(
+            {
+              action: `cancelou um agendamento ❌`,
+              moreDetails: 'freteLink',
+              detailsParams: [schedID],
+              name: ctx.from.first_name,
+              telegram_id: ctx.from?.id
+            }
+          )
+          return ctx.reply(`❌ Cancelado com sucesso!\n\n Clique aqui para ver os detalhes do agendamento:\n\n ${makeLinks('sched',schedID)}`)
+          
+        }
+        else if (ctx.message.text.substr(0, 8).includes('booksch')) {
+          console.log();
+          
+          const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(8))
+          if(!await this.fretesService.changeState(schedID, 'Marcada')){
+            return ctx.reply('Erro ao executar a ação')
+          }
+          await this.sendActionToAllUsers(
+            {
+              action: `concluiu o pedido de agendamento 📝`,
+              moreDetails: 'freteLink',
+              detailsParams: [schedID],
+              name: ctx.from.first_name,
+              telegram_id: ctx.from?.id
+            }
+          )
+          return ctx.reply(`📝 Marcada com sucesso!\n\n Clique aqui para ver os detalhes do agendamento:\n\n ${makeLinks('sched',schedID)}`)
+          
         }
         else if (ctx.message.text.substr(0, 6).includes('sched')) {
           const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(6))
@@ -1086,15 +1227,10 @@ export class TelegramService implements OnModuleInit {
                 })
               ctx.reply(
                 dates.length ? this.defaultMessages.calendarView.default(dates) : this.defaultMessages.calendarView.noResults,
-                // this.defaultMessages.calendarView.noResults,
                 {
                   reply_markup: {
                     inline_keyboard: menu,
-                    // keyboard: [
-                    //   [{ text: `Agendamentos - ${month}/${year} - ${monthName}` }],
-                    //   [{ text: `Ver Datas Livres - ${month}/${year} - ${monthName}` }],
-                    //                   ]
-                  }
+                }
                 })
             })
         }
@@ -1164,7 +1300,6 @@ export class TelegramService implements OnModuleInit {
             }
           })
         }
-
         else if (ctx.message.text.includes("Me")) {
           ctx.reply(ctx.message.contact?.phone_number || 'akdslam')
         }
@@ -1210,10 +1345,7 @@ export class TelegramService implements OnModuleInit {
             order: { updatedAt: "DESC" },
             take: 10
           })
-          console.log("telegramUser   ", telegramUser);
-          console.log("messages   ", messages);
           const contactsData = messages.find(message => message.updateSubType.includes('contact'))?.text
-          console.log("contactsData   ", contactsData);
           
           const { contacts } = JSON.parse(contactsData)
           const client = await this.clientsService.findByContact({ contacts })
@@ -1270,18 +1402,8 @@ export class TelegramService implements OnModuleInit {
               telegram_id:ctx.from.id,
               name:ctx.from.first_name
             }
-            // "adicionou um novo contato a base de dados", 
-            // this.defaultMessages.client.default(client as Client, contactsOfClient), 
-            // ctx.from.id, 
-            // ctx.from.first_name
           )
           return ctx.reply(`Cliente salvo com sucesso:\n${this.defaultMessages.client.default(client as Client, contactsOfClient)}`)
-          // const boatmen = await this.fretesService.boatmenAvailable({date:`${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}`})
-          // const client = await this.clientsService.findByContact({contacts})
-          // return ctx.reply("Escolha o barqueiro", {
-          //   reply_markup:{
-          //     keyboard: boatmen.map(key => ([{ text: `${key.id} - Agendar dia: ${date} - ${key.name}`,  }])) as any
-          // }})          
         }
         else if (ctx.message.text.includes("Iniciar agendamento")) {
           const telegramUser = await this.telegramUserRepository.findOne({where:{telegram_id: ctx.from.id}})
@@ -1290,11 +1412,7 @@ export class TelegramService implements OnModuleInit {
             order: { updatedAt: "DESC" },
             take: 5
           })
-          console.log(telegramUser);
-          console.log(messages);
           const date = messages.find(message => message.text.includes('Pedido de Agendamento'))?.text?.split('-')[1].trim()
-          console.log(date);
-          
           const boatmen = await this.fretesService.boatmenAvailable({ date: `${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}` })
           return ctx.reply("Escolha o barqueiro", {
             reply_markup: {
@@ -1302,6 +1420,64 @@ export class TelegramService implements OnModuleInit {
               keyboard: boatmen.map(key => ([{ text: `${key.id} - Agendar dia: ${date} - ${key.name}` }])) as any
             }
           })
+        }
+        else if (ctx.message.text == "Visualizar Pedidos de Agendamento") {
+          const numberOfResults = 1
+          const {fretes, paginate} = await this.fretesService.getSchedulingRequests({numberOfResults, pageSelected:1});
+          console.log(fretes );
+          
+          if(!fretes.length){
+            return ctx.reply("Não há Pedidos de Agendamento")
+          }
+          const message = fretes.map(frete => this.defaultMessages.frete.default(frete))
+          const menu: InlineKeyboardButton[][] = [[]]
+          paginate.prevPage
+            && menu[0].push(
+              {
+                text: `<  ${String(paginate.prevPage)}`,
+                callback_data: this.generate_actions(
+                  {
+                    action: 'ALL_SCHEDULINGS_REQUESTS',
+                    numberOfResults,
+                    goToPage: paginate.prevPage
+                  }
+                )
+              })
+          // CONVERTER PARA JWT PQ SÓ ACEITA STRING DE ATÉ 64 BYTES
+          paginate.nextPage
+            && menu[0].push(
+              {
+                text: `${String(paginate.nextPage)}  >`,
+                callback_data: this.generate_actions({
+                  numberOfResults,
+                  goToPage: paginate.nextPage,
+                  action: 'ALL_SCHEDULINGS_REQUESTS'
+                })
+              }
+            )
+          menu[0].push(
+            {
+              text: `${String(Math.ceil(paginate.count / numberOfResults))}  >>`,
+              callback_data: this.generate_actions({
+                numberOfResults,
+                goToPage: Math.ceil(paginate.count / numberOfResults),
+                action: 'ALL_SCHEDULINGS_REQUESTS'
+              })
+            }
+          )
+          console.log(menu)
+          message.push(this.defaultMessages.dateOfRequest.default())
+          message.push('\n')
+          ctx.reply(message.join('\n'), {
+            reply_markup: {
+              inline_keyboard: menu
+            }
+          })
+
+          return message
+          // return ctx.reply(
+          //   `Pedidos de Agendamento:
+          //   ${fretes.map((frete)=>this.defaultMessages.freteData.default(frete)).join('\n\n')}`)
         }
         else if (ctx.message.text == "Salvar contato e agendar pescaria") {
           const messages = await this.telegramUserMessageRepository.find({
@@ -1367,6 +1543,7 @@ export class TelegramService implements OnModuleInit {
               keyboard: [
                 [{ text: "Consulta" }],
                 [{ text: "Datas Livres" }],
+                [{ text: "Visualizar Pedidos de Agendamento" }],
               ]
             }
           })

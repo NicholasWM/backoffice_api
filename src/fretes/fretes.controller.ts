@@ -26,15 +26,11 @@ export class FretesController {
   ) { }
 
   @Post()
-
   async createFrete(
     @GetUser() user: User,
     @Body(ValidationPipe) createFreteDTO: CreateFreteDTO
   ): Promise<ReturnClientDTO> {
-    console.log(new Date(createFreteDTO.date));
-
     const frete = await this.freteService.create(createFreteDTO) as Frete
-    console.log(user);
 
     await this.telegramService.sendActionToAllUsers(
       {
@@ -44,10 +40,6 @@ export class FretesController {
         name: user?.telegram?.first_name,
         telegram_id: user?.telegram?.telegram_id
       }
-      // `Criou um ${frete.state}`, 
-      // `${frete.id}`, 
-      // user?.telegram?.telegram_id, 
-      // user?.telegram?.first_name
     )
     return { frete, message: '' }
   }

@@ -8,7 +8,7 @@ import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
 import { ClientRepository } from 'src/clients/clients.repository';
 import { Frete_Image } from 'src/images/frete-images.entity';
-import { DatesBusy, GetBusyDatesResponse, ICounters, IFreteWithImages } from './interfaces';
+import { DatesBusy, GetAvailableDatesResponse, GetBusyDatesResponse, ICounters, IFreteWithImages, IGetSchedulingRequests, IGetSchedulingRequestsResponse, months } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
 import { Between, getConnection, getManager, In, Not, Raw } from 'typeorm';
@@ -21,32 +21,8 @@ import { GetAvailableDaysDTO } from './dtos/get-available-days.dto';
 import { dateFrequency, getAllDaysInMonth } from 'src/utils/dateHelper';
 import { handlePaginateResponse } from 'src/utils/pagination';
 import { TelegramService } from 'src/telegram/telegram.service';
-const months = [
-  'Janeiro',
-  'Fevereiro',
-  'Marco',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-]
 
-interface GetAvailableDatesResponse {
-  'Domingo': string[];
-  'Segunda': string[];
-  'Terça': string[];
-  'Quarta': string[];
-  'Quinta': string[];
-  'Sexta': string[];
-  'Sabado': string[];
-}
-
-const orderDates = (a,b) => {
+export const orderDates = (a,b) => {
   if (new Date(a) > new Date(b)) {
     return 1;
   }
@@ -475,5 +451,33 @@ export class FretesService {
         select: ['boatman', 'client', 'id', 'state']
       })
       return {fretes, count}
+  }
+  
+  async getSchedulingRequests({pageSelected, numberOfResults}:IGetSchedulingRequests):Promise<IGetSchedulingRequestsResponse>{
+    const page = pageSelected || 1
+    const take = numberOfResults || 100
+    const skip= (page-1) * take ;
+    const [fretes, total] = await this.fretesRepository.findAndCount({
+      relations:['client', 'boatman'],
+      take,
+      skip,
+      where:{
+        state: 'Pedido de Agendamento'
+      }
+    })
+    return {
+      fretes,
+      paginate:
+          handlePaginateResponse(
+            {
+              data:{
+                result:fretes,
+                total
+              },
+              page: Number(pageSelected),
+              limit: numberOfResults
+            }
+          )
+    }
   }
 }
