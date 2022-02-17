@@ -7,13 +7,17 @@ FROM node:14.17.0-alpine
 WORKDIR /var/www/backend
 
 # Install app dependencies - For NPM use: `COPY package.json package-lock.lock ./`
-COPY package.json yarn.lock ./ 
+# COPY package.json yarn.lock ./ 
+COPY package.json ./ 
 
 # For NPM use: `RUN npm ci`
-RUN yarn --pure-lockfile
+# RUN yarn --pure-lockfile
+RUN npm install
+RUN npm ci
 
 # For NPM use: `RUN npm ci`
-RUN yarn build
+RUN npm run build
+# RUN yarn build
 
 # Copy important files - Add ormconfig.ts here if using Typeorm
 COPY .eslintrc.js nest-cli.json tsconfig.json tsconfig.build.json ./
@@ -26,4 +30,4 @@ COPY .env.docker /var/www/backend/.env
 
 # Entrypoint command - Replace `"yarn"` with `"npm", "run"` if you are using NPM as your package manager.
 # You can update this to run other NodeJS apps
-CMD [ "yarn", "start:dev", "--preserveWatchOutput" ]
+CMD [ "npm", "run", "start:dev", "--preserveWatchOutput" ]

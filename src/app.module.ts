@@ -18,8 +18,10 @@ import { TelegramUserModule } from './telegram-user/telegram-user.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { ConfigModule } from '@nestjs/config';
 import { TelegramUserMessagesModule } from './telegram-user-messages/telegram-user-messages.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal:true
     }),

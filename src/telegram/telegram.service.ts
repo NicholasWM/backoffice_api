@@ -1,4 +1,5 @@
-import { forwardRef, Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { ConfigService } from "@nestjs/config"
 import { FretesService } from 'src/fretes/fretes.service';
 import { Middleware, Telegraf } from 'telegraf'
@@ -145,6 +146,27 @@ export class TelegramService implements OnModuleInit {
     private configService: ConfigService,
   ) { }
 
+  private readonly logger = new Logger("Telegram Service");
+
+  // @Cron('0 10 * * * *')
+  @Cron(CronExpression.EVERY_2_HOURS)
+  handleCron() {
+    this.logger.debug('Called when the current second is 45');
+    this.fretesService.getSchedulingRequests({numberOfResults:1, pageSelected:1})
+    .then(({fretes, paginate})=> {
+      if(!!paginate?.lastPage){
+        return this.sendActionToAllUsers(
+          {
+            action: `enviou um lembrete`,
+            moreDetails: 'schedulingRequest',
+            detailsParams: [],
+            name: "Logger",
+            telegram_id: 0
+          }
+        )
+      }
+    })
+  }
   async getAllTelegrams(): Promise<any> {
     const clients = await this.telegramClientRepository.find();
     const users = await this.telegramUserRepository.find({});
@@ -422,7 +444,7 @@ export class TelegramService implements OnModuleInit {
       default: ()=> `\n========================================\n📌  Dados consultados em ${new Intl.DateTimeFormat('pt-br', { day: '2-digit', year: 'numeric', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date())}  📌\n========================================`
     },
     schedulingRequest:{
-      default: (frete: Frete)=> `Pedidos de Agendamento\n${this.defaultMessages.frete}\n Já marcou na agenda?\n Clique para concluir o Pedido de Agendamento: /booksch${frete.id}\n\n`,
+      default: ()=> `Existem pedidos de agendamento em aberto!\n\n Clique aqui para visualizar os pedidos em aberto: \n\n /VerPedidosDeAgendamento`,
       noResults: ""
     }
   }
@@ -1421,7 +1443,7 @@ export class TelegramService implements OnModuleInit {
             }
           })
         }
-        else if (ctx.message.text == "Visualizar Pedidos de Agendamento") {
+        else if (ctx.message.text === "Visualizar Pedidos de Agendamento" || ctx.message.text.includes('/VerPedidosDeAgendamento')) {
           const numberOfResults = 1
           const {fretes, paginate} = await this.fretesService.getSchedulingRequests({numberOfResults, pageSelected:1});
           console.log(fretes );
@@ -1475,9 +1497,6 @@ export class TelegramService implements OnModuleInit {
           })
 
           return message
-          // return ctx.reply(
-          //   `Pedidos de Agendamento:
-          //   ${fretes.map((frete)=>this.defaultMessages.freteData.default(frete)).join('\n\n')}`)
         }
         else if (ctx.message.text == "Salvar contato e agendar pescaria") {
           const messages = await this.telegramUserMessageRepository.find({
@@ -1512,11 +1531,7 @@ export class TelegramService implements OnModuleInit {
               telegram_id:ctx.from.id,
               name: ctx.from.first_name 
             }
-            // "adicionou um novo contato a base de dados",
-            //  this.defaultMessages.client.default(client as Client, contactsOfClient), 
-            //  ctx.from.id, 
-            //  ctx.from.first_name
-            )
+          )
 
           ctx.reply(`Cliente salvo com sucesso:\n${this.defaultMessages.client.default(client as Client, contactsOfClient)}`)
           return ctx.reply("Oque deseja realizar com esse contato?", {
