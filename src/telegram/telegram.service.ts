@@ -1,5 +1,5 @@
 import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { ConfigService } from "@nestjs/config"
 import { FretesService } from 'src/fretes/fretes.service';
 import { Middleware, Telegraf } from 'telegraf'
@@ -148,21 +148,24 @@ export class TelegramService implements OnModuleInit {
 
   private readonly logger = new Logger("Telegram Service");
 
-  @Cron('2 * * * ')
-  async handleCron() {
+  // @Cron('0 10 * * * *')
+  @Cron(CronExpression.EVERY_2_HOURS)
+  handleCron() {
     this.logger.debug('Called when the current second is 45');
-    const {fretes, paginate} = await this.fretesService.getSchedulingRequests({numberOfResults:1, pageSelected:1})
-    if(Number(paginate.lastPage)){
-      await this.sendActionToAllUsers(
-        {
-          action: `enviou um lembrete`,
-          moreDetails: 'schedulingRequest',
-          detailsParams: [],
-          name: "Logger",
-          telegram_id: 0
-        }
-      )
-    }
+    this.fretesService.getSchedulingRequests({numberOfResults:1, pageSelected:1})
+    .then(({fretes, paginate})=> {
+      if(!!paginate?.lastPage){
+        return this.sendActionToAllUsers(
+          {
+            action: `enviou um lembrete`,
+            moreDetails: 'schedulingRequest',
+            detailsParams: [],
+            name: "Logger",
+            telegram_id: 0
+          }
+        )
+      }
+    })
   }
   async getAllTelegrams(): Promise<any> {
     const clients = await this.telegramClientRepository.find();
