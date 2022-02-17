@@ -10,7 +10,7 @@ import {
 } from 'typeorm'
 
 @Entity()
-@Unique(['telegramId', 'phoneNumber', 'username'])
+@Unique(['telegramId', 'phoneNumber'])
 export class TelegramClient extends BaseEntity{
   @PrimaryGeneratedColumn('uuid')
 	id: string;
@@ -19,19 +19,19 @@ export class TelegramClient extends BaseEntity{
 	telegramId:string
 
   @Column({nullable:false, type: "varchar", length:200})
-	firstname:string
+	firstName:string
 
   @Column({nullable:false, type: "varchar", unique:true})
 	phoneNumber:string
 
-  @Column({nullable:false, type: "varchar", length:200, unique:true})
+  @Column({nullable:false, type: "varchar", length:200})
 	username:string
 
   @Column({nullable:false, type: "boolean"})
-	is_bot:boolean
+	isBot:boolean
 
   @Column({nullable:false, type: "varchar", length:200})
-	language_code:string
+	languageCode:string
 
   @OneToOne(()=> Client, client => client.telegram)
   user:Client

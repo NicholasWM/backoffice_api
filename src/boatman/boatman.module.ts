@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { BoatmanService } from './boatman.service';
 import { BoatmanController } from './boatman.controller';
 import { PassportModule } from '@nestjs/passport';
@@ -8,13 +8,14 @@ import { FretesModule } from 'src/fretes/fretes.module';
 
 @Module({
   imports:[
-    FretesModule,
+    forwardRef(()=> FretesModule),
     TypeOrmModule.forFeature([
       BoatmanRepository,
     ]),
     PassportModule.register({defaultStrategy: 'jwt'})
   ],
   controllers: [BoatmanController],
-  providers: [BoatmanService]
+  providers: [BoatmanService],
+  exports:[BoatmanService]
 })
 export class BoatmanModule {}

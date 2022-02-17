@@ -2,6 +2,7 @@ import {TypeOrmModuleOptions} from '@nestjs/typeorm'
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
 	type: 'postgres',
+	useUTC:false,
 	// host: '134.209.113.17',
 	// host: 'localhost',
 	host: 'backoffice_db',

@@ -1,3 +1,5 @@
+import { Frete } from "src/fretes/fretes.entity"
+
 export const translatorMessages = {
   'app.of':{
     en:'of',
@@ -97,3 +99,25 @@ export const dateMonthDayYearWrited = (date:string) => {
     let [day, month, dayNumber, year] = new Date(date).toDateString().split(' ')
     return `${translatorMessages['app.days.' + day]['pt']} - ${translatorMessages['app.day']['pt']} ${dayNumber} ${translatorMessages['app.of']['pt']} ${translatorMessages['app.months.'+ month]['pt']} ${translatorMessages['app.of']['pt']} ${year}`
 }
+export const dateMonthYearWrited = (date:string) => {
+    let [day, month, dayNumber, year] = new Date(date).toDateString().split(' ')
+    if(new Date(date).toDateString() == 'Invalid Date'){
+      console.log("Invalid: ", date);
+      
+      return ''
+    }
+    return `${date.split('/')[0]}/${year} - ${translatorMessages['app.months.'+ month]['pt']}`
+    // return `${date.split('/')[0]}/${year} - ${new Intl.DateTimeFormat('pt-br', {month:'long'}).format(new Date(date))}`
+}
+
+export const getAllDaysInMonth = (month, year) => Array.from(
+  {length: new Date(year, month - 1, 0).getDate() - 1},
+    (_, i) => new Date(year, month - 1, i + 1)
+  ).map(x => x.toLocaleDateString())
+
+export const dateFrequency = <Type extends {date: Date}>(data: Type[]) => data
+  .map(item=>item.date.toLocaleDateString())
+  .reduce(function(prev, cur) {
+    prev[cur] = (prev[cur] || 0) + 1;
+    return prev;
+}, {})

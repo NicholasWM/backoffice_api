@@ -22,14 +22,14 @@ export class Contact extends BaseEntity{
 	info:string
 
 	@Column({nullable:false, type: "boolean"})
-	status:Boolean
+	status:boolean
 
 	@Column({nullable:false, type: "varchar"})
 	clientId: string;
 
-	@ManyToOne(type => Client, client => client.id, {nullable:false})
+	@ManyToOne(type => Client, client => client.contacts, {nullable:false})
 	@JoinColumn()
-  client: Client;
+  	client: Client;
 
   @CreateDateColumn()
 	createdAt: Date;

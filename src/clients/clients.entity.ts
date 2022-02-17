@@ -29,8 +29,7 @@ export class Client extends BaseEntity{
 	@OneToMany(type => Frete, frete => frete.id)
 	fretes: Frete[];
 	
-	@OneToMany(type => Contact, contact => contact)
-	@JoinColumn({name:'contacts'})
+	@OneToMany(type => Contact, contact => contact.id)
 	contacts: Contact[];
 
 	@OneToMany(type => Parking, parking => parking)

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { UsersModule } from './users/users.module';
@@ -17,8 +17,11 @@ import { TelegramClientModule } from './telegram-client/telegram-client.module';
 import { TelegramUserModule } from './telegram-user/telegram-user.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { ConfigModule } from '@nestjs/config';
+import { TelegramUserMessagesModule } from './telegram-user-messages/telegram-user-messages.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal:true
     }),
@@ -31,7 +34,7 @@ import { ConfigModule } from '@nestjs/config';
     UsersModule,
     ImagesModule,
     ClientsModule,
-    FretesModule,
+    forwardRef(()=>FretesModule),
     ContactsModule,
     PricesModule,
     ParkingModule,
@@ -40,7 +43,8 @@ import { ConfigModule } from '@nestjs/config';
     BoatmanModule,
     TelegramClientModule,
     TelegramUserModule,
-    TelegramModule
+    TelegramModule,
+    TelegramUserMessagesModule
   ],
   controllers: [],
   providers: [],

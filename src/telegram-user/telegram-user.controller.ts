@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Put, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { TelegramUserService } from './telegram-user.service';
-import { CreateTelegramUserDto } from './dto/create-telegram-user.dto';
-import { UpdateTelegramUserDto } from './dto/update-telegram-user.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetUser } from 'src/auth/get-user.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Telegram User')
 @Controller('telegram-user')
@@ -10,27 +10,41 @@ export class TelegramUserController {
   constructor(private readonly telegramUserService: TelegramUserService) {}
 
   @Post()
-  create(@Body() createTelegramUserDto: CreateTelegramUserDto) {
-    return this.telegramUserService.create(createTelegramUserDto);
+  @ApiBearerAuth()
+	@UseGuards(AuthGuard())
+  async create(
+    @GetUser() user,
+  ) {
+    return await this.telegramUserService.create(user);
   }
 
-  @Get()
-  findAll() {
-    return this.telegramUserService.findAll();
+  @Get('/me')
+  @ApiBearerAuth()
+	@UseGuards(AuthGuard())
+  async getMe(
+    @GetUser() user,
+    //  res:Response
+  ) {
+    return user.telegram || {};
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.telegramUserService.findOne(+id);
-  }
+  // @Get()
+  // findAll() {
+  //   return this.telegramUserService.findAll();
+  // }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateTelegramUserDto: UpdateTelegramUserDto) {
-    return this.telegramUserService.update(+id, updateTelegramUserDto);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.telegramUserService.findOne(+id);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.telegramUserService.remove(+id);
-  }
+  // @Put(':id')
+  // update(@Param('id') id: string, @Body() updateTelegramUserDto: UpdateTelegramUserDto) {
+  //   return this.telegramUserService.update(+id, updateTelegramUserDto);
+  // }
+
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.telegramUserService.remove(+id);
+  // }
 }

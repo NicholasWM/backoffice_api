@@ -30,6 +30,13 @@ export class BusyDatesFreteDTO {
 		required:false
 	})
   fullDate?:string;
+
+	@ApiProperty({
+		description:'Domingo',
+		required:false,
+		default:null
+	})
+  	weekday?:string[];
 	
 	@ApiProperty({
 		description:'10',

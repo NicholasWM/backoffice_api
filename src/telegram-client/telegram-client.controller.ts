@@ -9,28 +9,28 @@ import { ApiTags } from '@nestjs/swagger';
 export class TelegramClientController {
   constructor(private readonly telegramClientService: TelegramClientService) {}
 
-  @Post()
-  create(@Body() createTelegramClientDto: CreateTelegramClientDto) {
-    return this.telegramClientService.create(createTelegramClientDto);
-  }
+  // @Post()
+  // create(@Body() createTelegramClientDto: CreateTelegramClientDto) {
+  //   return this.telegramClientService.create(createTelegramClientDto);
+  // }
 
-  @Get()
-  findAll() {
-    return this.telegramClientService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.telegramClientService.findAll();
+  // }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.telegramClientService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.telegramClientService.findOne(+id);
+  // }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateTelegramClientDto: UpdateTelegramClientDto) {
-    return this.telegramClientService.update(+id, updateTelegramClientDto);
-  }
+  // @Put(':id')
+  // update(@Param('id') id: string, @Body() updateTelegramClientDto: UpdateTelegramClientDto) {
+  //   return this.telegramClientService.update(+id, updateTelegramClientDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.telegramClientService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.telegramClientService.remove(+id);
+  // }
 }

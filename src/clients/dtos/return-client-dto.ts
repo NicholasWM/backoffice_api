@@ -3,7 +3,7 @@ import { Client } from "../clients.entity";
 
 export class ReturnClientDTO{
 	@ApiProperty()
-	client: Client;
+	client?: Client;
 	
 	@ApiProperty()
 	message: string;

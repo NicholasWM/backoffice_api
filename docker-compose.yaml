@@ -1,4 +1,4 @@
-version: "3.8"
+version: "2"
 
 services:
   backend:
@@ -29,9 +29,12 @@ services:
     container_name: backoffice_db
     restart: always
     environment:
+      TZ: '-03'
+      PGTZ: '-03'
       POSTGRES_DB: backoffice_pp
       POSTGRES_USER: Nicholas
       POSTGRES_PASSWORD: minhasenha
+      
     volumes:
       - backoffice_api_data:/var/lib/postgresql/data
     

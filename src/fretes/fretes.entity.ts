@@ -44,13 +44,13 @@ export class Frete extends BaseEntity{
 	date:Date
   
 	// @Column({nullable:true, type: "varchar", default:'Não definido'})
-	// boatman: String
+	// boatman: String zlckxllas
 
 	@Column({nullable:true, type: "varchar"})
-	postponed_new_id: String
+	postponed_new_id: string
   
 	@Column({nullable:true, type: "varchar"})
-	postponed_old_id: String
+	postponed_old_id: string
   
 	@OneToMany(type => Frete_Image, frete_image => frete_image.id)
 	images: Frete_Image[];
