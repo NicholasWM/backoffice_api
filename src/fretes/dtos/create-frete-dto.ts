@@ -13,7 +13,7 @@ export class CreateFreteDTO {
 		description:"4daa9f36-accd-49d1-8550-41e43f31520d",
 		default:1
 	})
-	boatmanId: string;
+	boatmanId?: string;
 
 	@ApiProperty({
 		description: "Array of ids/uuids of the prices"

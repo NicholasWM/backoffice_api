@@ -288,7 +288,6 @@ export class FretesService {
     
     const fullDateConverted = new Date(fullDate)
     const take = weekday ? 100 : numberOfResults || 10
-    console.log("take   ", take);
     
     const page = pageSelected || 1;
     const skip= (page-1) * take ;
@@ -324,7 +323,6 @@ export class FretesService {
        })
        total = fretes.length
       fretes = fretes.filter((data,index) => {
-        console.log("page ", page);
         
           if(page === 1){
             return index < numberOfResults * Number(page)
@@ -356,7 +354,6 @@ export class FretesService {
           datesBusy[key] = [{date, id, state, client, boatman}]
         }
       })
-      console.log(fretes.length, total)
       return {
         dates: datesBusy,
         counters,
@@ -405,7 +402,6 @@ export class FretesService {
         date: Between(new Date(firstDate), new Date(daysOfTheMonth[daysOfTheMonth.length-1]))
       }
     })
-    console.log(new Date(firstDate), new Date(daysOfTheMonth[daysOfTheMonth.length-1]));
     
     const frequencyOfDays = dateFrequency<Frete>(result)
     let listOfDays = daysOfTheMonth.filter(

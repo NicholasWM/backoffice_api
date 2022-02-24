@@ -28,6 +28,7 @@ import { TelegrafContext } from 'telegraf/typings/context';
 import { JwtService } from '@nestjs/jwt';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
 import { IState } from 'src/fretes/types';
+import { CreateFreteDTO } from 'src/fretes/dtos';
 
 const daysHifen = [
   "Domingo",
@@ -203,13 +204,12 @@ export class TelegramService implements OnModuleInit {
   }
 
   private token = this.configService.get<string>('TELEGRAM_TOKEN');
-  public bot = new Telegraf("1806857753:AAGrSlh_1m3jtQ2VZ3KO1QCa6aGlED_BgtA");
+  public bot = new Telegraf("5108551664:AAHAhWcgCCePtG0cAjbESvauPxwTjOfEPTo");
   sendMessage(chatId: string | number, message: string): void {
     this.bot.telegram.sendMessage(chatId, message)
   }
   async sendActionToAllUsers({action, moreDetails, detailsParams, telegram_id, name}: ISendActionToAllUsers) {
     const telegram_users = await this.telegramUserRepository.find()
-    console.log(telegram_users);
     const chats_ids = (await Promise.all(
       telegram_users.map(async user => {
         return {
@@ -478,6 +478,8 @@ export class TelegramService implements OnModuleInit {
         return next()
       },
       text: async (ctx, next) => {
+        // console.log('TOKENEEEEEEEEEEEEEEEEE', this.token);
+
         const { id } = ctx.from
         const { text, message_id } = ctx.message
         const { id: chat_id } = ctx.message.chat
@@ -880,7 +882,6 @@ export class TelegramService implements OnModuleInit {
                 }
               }
             }
-            console.log(Object.keys(obj));
             
             const reordered = (() => {
               const finalObj = {}
@@ -982,7 +983,6 @@ export class TelegramService implements OnModuleInit {
             })
         }
         else if (ctx.message.text === 'Consulta') {
-          console.log(menu['Consulta'].parameters);
           
           const keyboard = [
             ...Object.keys(menu['Consulta'].parameters)
@@ -1060,7 +1060,6 @@ export class TelegramService implements OnModuleInit {
           
         }
         else if (ctx.message.text.substr(0, 8).includes('booksch')) {
-          console.log();
           
           const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(8))
           if(!await this.fretesService.changeState(schedID, 'Marcada')){
@@ -1169,7 +1168,6 @@ export class TelegramService implements OnModuleInit {
             }
           )
           // callback_data: JSON.stringify({ "numberOfResults": numberOfResults, "month": month, "year": year, "goToPage": Math.ceil(response.paginate.count / numberOfResults) }) })
-          console.log(menu)
           message.push(this.defaultMessages.dateOfRequest.default())
           message.push('\n')
           ctx.reply(message.join('\n'), {
@@ -1204,7 +1202,6 @@ export class TelegramService implements OnModuleInit {
             .then((response) => {
               const dates = []
               const freteDays: any = []
-              console.log(response.paginate)
               Object.keys(response.dates).map((date, index) => {
                 if (index < 2) {
                   dates.push(...response.dates[date])
@@ -1356,9 +1353,15 @@ export class TelegramService implements OnModuleInit {
             return ctx.reply(fretes.map(frete => this.defaultMessages.frete.default(frete)).join('\n'))
           }
           const boatmenAvailable = await this.fretesService.boatmenAvailable({ date: `${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}` })
+          const isBoatmanUndefined = String(boatmanId).trim() == '0'
 
-          if (!boatmenAvailable.find(boatman => boatman.id == Number(boatmanId))) {
-            return ctx.reply("O barqueiro selecionado não está disponivel nessa data!")
+          if(!boatmenAvailable.length && isBoatmanUndefined){
+            return ctx.reply("Não tem barqueiros disponiveis nessa data!")
+          }
+          if(!isBoatmanUndefined){
+            if (!boatmenAvailable.find(boatman => boatman.id == Number(boatmanId))) {
+              return ctx.reply("O barqueiro selecionado não está disponivel nessa data!")
+            }
           }
           const prices = await this.pricesService.findAllActiveIds()
           const telegramUser = await this.telegramUserRepository.findOne({where:{telegram_id: ctx.from.id}})
@@ -1374,15 +1377,18 @@ export class TelegramService implements OnModuleInit {
           if (!client) {
             return ctx.reply('Erro ao buscar o Cliente')
           }
-
-          const newFrete = await this.fretesService.create({
+          const frete: CreateFreteDTO = {
             prices: prices.map(price => price.id),
-            boatmanId,
             clientId: client?.id,
             state: 'Pedido de Agendamento',
             customPrice: null,
             date: new Date(`${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}`)
-          })
+          }
+            
+          if(!isBoatmanUndefined){
+            frete[boatmanId] = boatmanId
+          }
+          const newFrete = await this.fretesService.create(frete)
           this.sendActionToAllUsers(
             {
               action:"criou um Pedido de Agendamento",
@@ -1439,14 +1445,13 @@ export class TelegramService implements OnModuleInit {
           return ctx.reply("Escolha o barqueiro", {
             reply_markup: {
               one_time_keyboard: true,
-              keyboard: boatmen.map(key => ([{ text: `${key.id} - Agendar dia: ${date} - ${key.name}` }])) as any
+              keyboard: [[{text: `0 - Agendar dia: ${date} - Indefinido`}],...boatmen.map(key => ([{ text: `${key.id} - Agendar dia: ${date} - ${key.name}` }]))] as any
             }
           })
         }
         else if (ctx.message.text === "Visualizar Pedidos de Agendamento" || ctx.message.text.includes('/VerPedidosDeAgendamento')) {
           const numberOfResults = 1
           const {fretes, paginate} = await this.fretesService.getSchedulingRequests({numberOfResults, pageSelected:1});
-          console.log(fretes );
           
           if(!fretes.length){
             return ctx.reply("Não há Pedidos de Agendamento")
@@ -1487,7 +1492,6 @@ export class TelegramService implements OnModuleInit {
               })
             }
           )
-          console.log(menu)
           message.push(this.defaultMessages.dateOfRequest.default())
           message.push('\n')
           ctx.reply(message.join('\n'), {
