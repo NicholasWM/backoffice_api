@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserImagesRepository } from './user-images.repository';
+
+interface types {
+  
+}
+
 @Injectable()
 export class ImagesService {
   constructor(
@@ -8,12 +13,11 @@ export class ImagesService {
     private userImagesRepository:UserImagesRepository,
   ){}
 
-  async imageExists(type, name){
+  async imageExists<T>(type, name){
     const types = {
       user: this.userImagesRepository,
     }
-    const response = await types[type].find({where:{name}})
-    console.log(response.length > 0)
-    return response.length > 0
+    const response:T = await types[type].findOne({where:{name}})
+    return {exists: Object.keys(response).length > 0, info: response}
   }
 }
