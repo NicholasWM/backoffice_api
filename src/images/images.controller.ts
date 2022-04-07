@@ -4,6 +4,7 @@ import { ImagesService } from './images.service';
 import {diskStorage} from 'multer'
 import { editFileName, imageFileFilter } from 'src/utils/file-upload';
 import { ApiTags } from '@nestjs/swagger';
+import { User_Image } from './user-images.entity';
 
 @ApiTags('images')
 @Controller('images')
@@ -63,9 +64,9 @@ export class ImagesController {
   @Get(':category/:imagename')
   async getImage(@Param('imagename') image, @Param('category') category, @Res() res) {
     const categoriesList = ['store', 'product', 'user']
-    if(categoriesList.includes(category) && await this.imageService.imageExists(category, image)){
-      const responseImage = res.sendFile(image, { root: `./uploads/${category}` });
-      console.log('NoContent')
+    const {exists, info} = await this.imageService.imageExists<User_Image>(category, image)
+    if(categoriesList.includes(category) && exists){
+      const responseImage = res.sendFile(image, { root: `./uploads/${category}/${info.dirname}` });
       return {
         status: HttpStatus.OK,
         data: responseImage
