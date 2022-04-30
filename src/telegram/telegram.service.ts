@@ -26,7 +26,7 @@ import { Boatman } from 'src/boatman/entities/boatman.entity';
 import { TelegrafContext } from 'telegraf/typings/context';
 import { IState } from 'src/fretes/types';
 import { CreateFreteDTO } from 'src/fretes/dtos';
-import { CBQueryTelegramActionToFunction, IAllMonthSchedulingsCallbackQueryAction, IAllSchedulingsRequestsCallbackQueryAction, IDefaultMessages, IGenerateActions, IOneMonthSchedulingsCallbackQueryAction, ISendActionToAllUsers, MenuResponse, MenuResponseParameters, Middlewares, TDaysHifen, TOneMonthSchedulingsCallbackRequestText } from './types';
+import { CBQueryTelegramActionToFunction, IAllMonthSchedulingsCallbackQueryAction, IAllSchedulingsRequestsCallbackQueryAction, IDefaultMessages, IGenerateActions, IOneMonthSchedulingsCallbackQueryAction, ISendActionToAllUsers, KeywordsActionResponse, MenuResponse, MenuResponseParameters, Middlewares, TDaysHifen, TOneMonthSchedulingsCallbackRequestText } from './types';
 
 const daysHifen: TDaysHifen[] = [
   "Domingo",
@@ -39,28 +39,6 @@ const daysHifen: TDaysHifen[] = [
   "Dias de semana",
   "Finais de semana",
 ]
-
-
-type IEventTelegram = {
-  name: string, condition: Function
-}
-// interface ITelegramEvent{
-
-// }
-// class TelegramEvent implements ITelegramEvent{
-//   private name: string
-//   private condition: Function
-//   constructor({name, condition}: IEventTelegram){
-//     this.name = name
-//     this.condition = condition
-//   }
-// }
-
-
-interface IActionMessage {
-  name: string,
-  detailsString: string,
-}
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -97,8 +75,6 @@ export class TelegramService implements OnModuleInit {
     ...generateOptions()
   }
 
-
-
   middlewares: Middlewares = {
     callback_query: {
       default: async (ctx, next) => {
@@ -109,8 +85,9 @@ export class TelegramService implements OnModuleInit {
       }
     },
     message: {
-      contact: this.persistMessageData,
+      contact: (ctx: TelegrafContext, next) => this.persistMessageData(ctx, next),
       text: (ctx: TelegrafContext, next) => this.verifyUserPermission(ctx, next)
+      // text: (ctx: TelegrafContext, next) => next()
     },
   }
 
@@ -147,7 +124,6 @@ export class TelegramService implements OnModuleInit {
       })
     }
   }
-
   @Cron(CronExpression.EVERY_2_HOURS)
   handleCron() {
     this.logger.debug('Called when the current second is 45');
@@ -225,6 +201,20 @@ export class TelegramService implements OnModuleInit {
     }
   }
   async handleText(ctx: TelegrafContext) {
+    const keywordsToAction: KeywordsActionResponse = {
+      'Visualizar Dados do Cliente': (messageReceived) => {
+        const [str, clienID] = messageReceived?.split(':')
+        this.clientsService.getOne({ id: clienID.trim() })
+          .then((client) => {
+            ctx.reply(defaultMessages.client.default(client, client.contacts), {})
+          })
+      }
+    }
+    Object.keys(keywordsToAction).forEach(keyword => {
+      if (ctx.message.text.includes(keyword)) {
+        keywordsToAction[keyword](ctx.message.text)
+      }
+    })
 
     if (Object.keys(this.menu.Consulta.parameters).includes(ctx.message.text)) {
       const { message, parameters, handleReplyMarkup } = this.menu.Consulta
@@ -267,13 +257,6 @@ export class TelegramService implements OnModuleInit {
         reply_markup: handleReplyMarkup(parameters)
       })
 
-    }
-    else if (ctx.message.text.includes('Visualizar Dados do Cliente')) {
-      const [str, clienID] = ctx.message.text.split(':')
-      this.clientsService.getOne({ id: clienID.trim() })
-        .then((client) => {
-          return ctx.reply(defaultMessages.client.default(client, client.contacts), {})
-        })
     }
     else if (ctx.message.text.includes("Visualizar data: ")) {
       const dateBr = ctx.message.text.split('-')[1].trim()
@@ -823,6 +806,7 @@ export class TelegramService implements OnModuleInit {
   async persistMessageData(ctx, next) {
     const { id } = ctx.from
     const { message_id } = ctx.message
+    console.log(this.telegramUserMessageRepository)
     const messageIdExists = await this.telegramUserMessageRepository.findOne({ where: { message_id } })
     const user = await this.telegramUserRepository.findOne({ telegram_id: id })
     if (!user) {

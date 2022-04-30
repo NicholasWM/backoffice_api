@@ -6,7 +6,7 @@ import { UpdateType, MessageSubTypes } from "telegraf/typings/telegram-types";
 
 
 export interface IGetAllTelegrams {
-  clients: TelegramClient[], 
+  clients: TelegramClient[],
   users: TelegramUser[]
 }
 
@@ -90,7 +90,7 @@ export interface ISendActionToAllUsers {
 export type ActionCallbackName = 'ALL_DAYS_OF_MONTH_SCHEDULINGS' | 'ONE_DAY_OF_MONTH_SCHEDULINGS' | 'ALL_SCHEDULINGS_REQUESTS'
 
 export type CBQueryTelegramActionToFunction = {
-  [nome in ActionCallbackName] ?: (data: TOneMonthSchedulingsCallbackRequestText, ctx: TelegrafContext) => void
+  [nome in ActionCallbackName]?: (data: TOneMonthSchedulingsCallbackRequestText, ctx: TelegrafContext) => void
 }
 
 export interface IGenerateActions {
@@ -113,6 +113,10 @@ export interface MenuResponse {
   };
 }
 
+export interface KeywordsActionResponse {
+  [date: string]: (messageReceived: string) => void,
+}
+
 export type Middlewares = {
   [updateType in UpdateType]?: {
     [updateSubType in MessageSubTypes | Required<'default'>]?:
@@ -125,7 +129,7 @@ export interface MenuResponseParameters {
   handleReplyMarkup?: () => TT.InlineKeyboardMarkup | TT.ReplyKeyboardMarkup | TT.ReplyKeyboardRemove | TT.ForceReply
 }
 
-export type TDaysHifen = 
+export type TDaysHifen =
   "Domingo" |
   "Segunda-feira" |
   "Terça-feira" |
