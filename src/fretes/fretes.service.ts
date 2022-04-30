@@ -276,7 +276,7 @@ export class FretesService {
     }
   }
   async getBusyDates(busyDatesFreteDTO:BusyDatesFreteDTO):Promise<GetBusyDatesResponse>{
-    const {fullDate, month, year, numberOfResults, pageSelected, weekday} = busyDatesFreteDTO
+    const {fullDate, month, year, numberOfResults, pageSelected, weekdays} = busyDatesFreteDTO
     const initialDate = `${year||new Date().getUTCFullYear()}\\${month ? month : year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
     const finalDate = (() => {
       const date = new Date(year ? Number(year) : new Date().getUTCFullYear(), month ? Number(month) - 1 : year ? 11 : 12, year ? 1:0)
@@ -287,7 +287,7 @@ export class FretesService {
     })()
     
     const fullDateConverted = new Date(fullDate)
-    const take = weekday ? 100 : numberOfResults || 10
+    const take = weekdays ? 100 : numberOfResults || 10
     
     const page = pageSelected || 1;
     const skip= (page-1) * take ;
@@ -302,7 +302,7 @@ export class FretesService {
           {date: Between(initialDate, finalDate)},
       // select:['date', 'id', 'state', 'boatman', 'client', ],
       take: take,
-      skip: weekday?0:skip
+      skip: weekdays?0:skip
     })
 
     const datesBusy:DatesBusy  = {} as DatesBusy
@@ -315,10 +315,10 @@ export class FretesService {
       'FretesPerMonth': {},
       'FretesThisWeek': [],
     }
-    if(weekday){
+    if(weekdays){
       fretes = fretes.filter(({state, date, id}) => {
-        return weekday.find( element => {
-          return element.toUpperCase() === new Intl.DateTimeFormat('pt-br', {weekday:'long'}).format(new Date(date)).toUpperCase()
+        return weekdays.find( element => {
+          return element?.toUpperCase() === new Intl.DateTimeFormat('pt-br', {weekday:'long'}).format(new Date(date)).toUpperCase()
         })
        })
        total = fretes.length
@@ -365,7 +365,7 @@ export class FretesService {
                 total
               },
               page: Number(page),
-              limit:weekday ? numberOfResults : Number(take)
+              limit: weekdays ? numberOfResults : Number(take)
             }
           )
       }

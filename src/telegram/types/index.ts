@@ -1,5 +1,9 @@
+import * as TT from "telegram-typings";
 import { TelegramClient } from "src/telegram-client/entities/telegram-client.entity";
 import { TelegramUser } from "src/telegram-user/entities/telegram-user.entity";
+import { TelegrafContext } from "telegraf/typings/context";
+import { UpdateType, MessageSubTypes } from "telegraf/typings/telegram-types";
+
 
 export interface IGetAllTelegrams {
   clients: TelegramClient[], 
@@ -28,45 +32,106 @@ export type ParseVCardResponse = {
   }[]
 }
 
-export function parseVCard(input): ParseVCardResponse {
-  const Re1 = /^(version|fn|title|org):(.+)$/i;
-  const Re2 = /^([^:;]+);([^:]+):(.+)$/;
-  const ReKey = /item\d{1,2}\./;
-  const fields = {} as ParseVCardResponse;
 
-  input?.split(/\r\n|\r|\n/).forEach(function (line) {
-    let results, key;
+export type TOneMonthSchedulingsCallbackRequestText = [ActionCallbackName, number, number, string, string, number[]]
 
-    if (Re1.test(line)) {
-      results = line.match(Re1);
-      key = results[1].toLowerCase();
-      fields[key] = results[2];
-    } else if (Re2.test(line)) {
-      results = line.match(Re2);
-      key = results[1].replace(ReKey, '').toLowerCase();
+export interface IOneMonthSchedulingsCallbackQueryAction {
+  ctx: TelegrafContext,
+  month: string,
+  year: string,
+  numberOfResults: number,
+  goToPage: number,
+  weekdays: string[],
+  weekdayIndex: number[],
+}
 
-      const meta = {};
-      results[2]?.split(';')
-        .map(function (p, i) {
-          const match = p.match(/([a-z]+)=(.*)/i);
-          if (match) {
-            return [match[1], match[2]];
-          } else {
-            return ["TYPE" + (i === 0 ? "" : i), p];
-          }
-        })
-        .forEach(function (p) {
-          meta[p[0]] = p[1];
-        });
+export interface IAllMonthSchedulingsCallbackQueryAction {
+  ctx: TelegrafContext,
+  month: string,
+  year: string,
+  numberOfResults: number,
+  goToPage: number,
+}
 
-      if (!fields[key]) fields[key] = [];
+export interface IAllSchedulingsRequestsCallbackQueryAction {
+  ctx: TelegrafContext,
+  action: ActionCallbackName,
+  numberOfResults: number,
+  goToPage: number,
+}
 
-      fields[key].push({
-        meta: meta,
-        value: results[3]?.split(' ')?.join('')?.split('-')?.join('')?.split(';')
-      })
-    }
-  });
+export type MessageTypes = 'client' |
+  'frete' |
+  'freteData' |
+  'copyPasteAvailableDates' |
+  'daySchedulingsResume' |
+  'connectTelegram' |
+  'calendarView' |
+  'dateOfRequest' |
+  'freteLink' |
+  'schedulingRequest'
 
-  return fields;
+export type IDefaultMessages = {
+  [type in Partial<MessageTypes>]: {
+    default?: (...params: any) => string;
+    noResults?: string
+  }
 };
+
+
+export interface ISendActionToAllUsers {
+  action: string,
+  moreDetails: MessageTypes,
+  detailsParams: any[],
+  telegram_id: number,
+  name: string
+}
+
+export type ActionCallbackName = 'ALL_DAYS_OF_MONTH_SCHEDULINGS' | 'ONE_DAY_OF_MONTH_SCHEDULINGS' | 'ALL_SCHEDULINGS_REQUESTS'
+
+export type CBQueryTelegramActionToFunction = {
+  [nome in ActionCallbackName] ?: (data: TOneMonthSchedulingsCallbackRequestText, ctx: TelegrafContext) => void
+}
+
+export interface IGenerateActions {
+  action: ActionCallbackName,
+  numberOfResults: number,
+  month: string,
+  year: string,
+  goToPage: number,
+  weekday: number[]
+}
+
+export interface MenuResponse {
+  [date: string]: {
+    message: string;
+    handleReplyMarkup: any;
+    events?: []
+    parameters: {
+      [parameter: string]: MenuResponseParameters
+    }
+  };
+}
+
+export type Middlewares = {
+  [updateType in UpdateType]?: {
+    [updateSubType in MessageSubTypes | Required<'default'>]?:
+    (ctx: TelegrafContext, next: () => Promise<void>) => void;
+  };
+};
+
+export interface MenuResponseParameters {
+  handleMessage: () => any;
+  handleReplyMarkup?: () => TT.InlineKeyboardMarkup | TT.ReplyKeyboardMarkup | TT.ReplyKeyboardRemove | TT.ForceReply
+}
+
+export type TDaysHifen = 
+  "Domingo" |
+  "Segunda-feira" |
+  "Terça-feira" |
+  "Quarta-feira" |
+  "Quinta-feira" |
+  "Sexta-feira" |
+  "Sábado" |
+  "Dias de semana" |
+  "Finais de semana"

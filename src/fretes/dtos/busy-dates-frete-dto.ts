@@ -36,7 +36,7 @@ export class BusyDatesFreteDTO {
 		required:false,
 		default:null
 	})
-  	weekday?:string[];
+  	weekdays?:string[];
 	
 	@ApiProperty({
 		description:'10',
