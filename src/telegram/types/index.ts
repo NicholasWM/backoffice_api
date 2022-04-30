@@ -114,7 +114,7 @@ export interface MenuResponse {
 }
 
 export interface KeywordsActionResponse {
-  [date: string]: (messageReceived: string) => void,
+  [date: string]: (ctx: TelegrafContext) => void,
 }
 
 export type Middlewares = {

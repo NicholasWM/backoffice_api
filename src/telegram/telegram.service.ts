@@ -124,6 +124,359 @@ export class TelegramService implements OnModuleInit {
       })
     }
   }
+
+  keywordsToAction: KeywordsActionResponse = {
+    'Visualizar Dados do Cliente': async (ctx) => {
+      const [str, clienID] = ctx.message.text?.split(':')
+      this.clientsService.getOne({ id: clienID.trim() })
+        .then((client) => {
+          ctx.reply(defaultMessages.client.default(client, client.contacts), {})
+        })
+    },
+    "Visualizar data: ": async (ctx) => {
+      const dateBr = ctx.message.text.split('-')[1].trim()
+      const dateEn = (() => {
+        const dateSplited = dateBr.split('/')
+        return `${dateSplited[2]}/${dateSplited[1].length === 1 ? `0${dateSplited[1]}` : dateSplited[1]}/${dateSplited[0].length === 1 ? `0${dateSplited[0]}` : dateSplited[0]}`
+      }
+      )()
+      this.fretesService.getBusyDates({ fullDate: dateEn, busy: false })
+        .then(fretes => {
+          ctx.reply(defaultMessages.daySchedulingsResume.default(fretes, dateEn), {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              one_time_keyboard: true,
+              keyboard: [
+                [{ text: `Pedido de Agendamento - ${dateBr}` }],
+                [{ text: `Ver Datas Livres - ${dateBr.split('/')[1]}/${dateBr.split('/')[2]} - ${new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(dateEn))}` }],
+                [{ text: `Datas Livres` }],
+              ]
+            }
+          })
+
+        })
+    },
+    "Ver todos os agendamentos:": async (ctx) => {
+      const [month, year] = ctx.message.text.split(':')[1].trim().split('/')
+      const numberOfResults = 1
+      const response = await this.fretesService.getBusyDates({ month: month, year: year, numberOfResults, pageSelected: 1, busy: true })
+
+      const message = Object.keys(response.dates).map(date => {
+        const fretes: DateBusy[] = response.dates[date] as any
+        return defaultMessages.calendarView.default(fretes)
+      })
+
+      const menu: InlineKeyboardButton[][] = [[]]
+      response.paginate.prevPage
+        && menu[0].push(
+          {
+            text: `<  ${String(response.paginate.prevPage)}`,
+            callback_data: this.generate_actions(
+              {
+                action: 'ALL_DAYS_OF_MONTH_SCHEDULINGS',
+                numberOfResults,
+                month,
+                year,
+                goToPage: response.paginate.prevPage
+              }
+            )
+          })
+      // CONVERTER PARA JWT PQ SÓ ACEITA STRING DE ATÉ 64 BYTES
+      response.paginate.nextPage
+        && menu[0].push(
+          {
+            text: `${String(response.paginate.nextPage)}  >`,
+            callback_data: this.generate_actions({
+              numberOfResults,
+              month, year,
+              goToPage: response.paginate.nextPage,
+              action: 'ALL_DAYS_OF_MONTH_SCHEDULINGS'
+            })
+          }
+        )
+      // callback_data: JSON.stringify({ "numberOfResults": numberOfResults, "month": month, "year": year, "goToPage": response.paginate.nextPage }) })
+      menu[0].push(
+        {
+          text: `${String(Math.ceil(response.paginate.count / numberOfResults))}  >>`,
+          callback_data: this.generate_actions({
+            numberOfResults,
+            month, year,
+            goToPage: Math.ceil(response.paginate.count / numberOfResults),
+            action: 'ALL_DAYS_OF_MONTH_SCHEDULINGS'
+          })
+        }
+      )
+      // callback_data: JSON.stringify({ "numberOfResults": numberOfResults, "month": month, "year": year, "goToPage": Math.ceil(response.paginate.count / numberOfResults) }) })
+      message.push(defaultMessages.dateOfRequest.default())
+      message.push('\n')
+      ctx.reply(message.join('\n'), {
+        reply_markup: {
+          inline_keyboard: menu
+        }
+      })
+
+      return message
+    },
+    "Agendamentos: ": async (ctx) => {
+      const numberOfResults = 1
+
+      const day = ctx.message.text.split(':')[1].split('|')[0].trim()
+      const searchDays = []
+      if (day.toUpperCase() === "Dias de semana".toUpperCase()) {
+        searchDays.push(...daysHifen.filter((day, index) => ![0, 6, 7, 8].includes(index)))
+      }
+      else if (day.toUpperCase() === "Finais de semana".toUpperCase()) {
+        searchDays.push(daysHifen[6], daysHifen[0])
+      } else {
+        searchDays.push(day)
+      }
+
+      const [month, year] = ctx.message.text.split('|')[1].trim().split('/')
+      const monthName = new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(`${year}/${month}/1`))
+      const weekday = searchDays.map(searchDay => {
+        return daysHifen.findIndex(day => day === searchDay)
+      })
+
+      this.fretesService.getBusyDates({ numberOfResults, busy: true, month: month, year: year, weekdays: searchDays })
+        .then((response) => {
+          const dates = []
+          const freteDays: any = []
+          Object.keys(response.dates).map((date, index) => {
+            if (index < 2) {
+              dates.push(...response.dates[date])
+              freteDays.push(date)
+            }
+          })
+          const menu: InlineKeyboardButton[][] = [[]]
+          response.paginate.prevPage
+            && menu[0].push(
+
+              {
+                text: `<  ${String(response.paginate.prevPage)}`,
+                callback_data: this.generate_actions({
+                  action: 'ONE_DAY_OF_MONTH_SCHEDULINGS',
+                  month, year,
+                  goToPage: response.paginate.prevPage,
+                  numberOfResults,
+                  weekday
+                })
+              })
+          response.paginate.nextPage
+            && menu[0].push({
+              text: `${String(response.paginate.nextPage)}  >`,
+              callback_data: this.generate_actions({
+                action: 'ONE_DAY_OF_MONTH_SCHEDULINGS',
+                month, year,
+                goToPage: response.paginate.nextPage,
+                numberOfResults,
+                weekday
+              })
+            })
+          response.paginate.nextPage
+            && menu[0].push({
+              text: `${String(Math.ceil(response.paginate.count / numberOfResults))}  >>`,
+              callback_data: this.generate_actions({
+                action: 'ONE_DAY_OF_MONTH_SCHEDULINGS',
+                month, year,
+                goToPage: Math.ceil(response.paginate.count / numberOfResults),
+                numberOfResults,
+                weekday
+              })
+            })
+          ctx.reply(
+            dates.length ? defaultMessages.calendarView.default(dates) : defaultMessages.calendarView.noResults,
+            {
+              reply_markup: {
+                inline_keyboard: menu,
+              }
+            })
+        })
+    },
+    "Verificar disponibilidade: ": async (ctx) => {
+      const day = ctx.message.text.split(':')[1].split('|')[0].trim()
+      const [month, year] = ctx.message.text.split('|')[1].trim().split('/')
+      const monthName = new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(`${month}/1/${year}`))
+      this.fretesService.getAvailableDates({ month: Number(month), year: Number(year) })
+        .then((response) => {
+          const responseData = Object.keys(response).find(key => key.toUpperCase() === day.toUpperCase())
+          if (response[responseData].length) {
+            return ctx.reply(
+              defaultMessages.copyPasteAvailableDates.default(response[responseData], day)
+              , {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                  keyboard: [
+                    [{ text: `Agendamentos - ${month}/${year} - ${monthName}` }],
+                    [{ text: `Ver Datas Livres - ${month}/${year} - ${monthName}` }],
+                    ...response[responseData]
+                      .map(date => {
+                        const dayBrFormat = []
+                        dayBrFormat.push(date.split('/')[1])
+                        dayBrFormat.push(date.split('/')[0])
+                        dayBrFormat.push(date.split('/')[2])
+                        return [
+                          `Visualizar data: ${new Intl.DateTimeFormat(
+                            'pt-br',
+                            {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })
+                            .format(
+                              new Date(date)
+                            )} - ${dayBrFormat.join('/')}`
+                        ]
+                      })
+                  ]
+                }
+              })
+          } else {
+            return ctx.reply(
+              defaultMessages.copyPasteAvailableDates.noResults
+              , {
+                reply_markup: {
+                  keyboard: [
+                    [{ text: `Agendamentos - ${month}/${year} - ${monthName}` }],
+                    [{ text: `Ver Datas Livres - ${month}/${year} - ${monthName}` }],
+                  ]
+                }
+              })
+          }
+        })
+    },
+    "Pedido de Agendamento - ": async (ctx) => {
+      return ctx.reply("Envie o contato do cliente salvo no seu celular.")
+    },
+    "Agendar dia": async (ctx) => {
+      const [boatmanId, dateWithText, boatmanName] = ctx.message.text.split('-')
+      const date = dateWithText.split(':')[1].trim()
+      const { fretes, count } = await this.fretesService.verifyIfDateIsAvailable(`${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}`)
+      if (count >= 2) {
+        ctx.reply("Não há vaga nessa data")
+        return ctx.reply(fretes.map(frete => defaultMessages.frete.default(frete)).join('\n'))
+      }
+      const boatmenAvailable = await this.fretesService.boatmenAvailable({ date: `${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}` })
+      const isBoatmanUndefined = String(boatmanId).trim() == '0'
+
+      if (!boatmenAvailable.length && isBoatmanUndefined) {
+        return ctx.reply("Não tem barqueiros disponiveis nessa data!")
+      }
+      if (!isBoatmanUndefined) {
+        if (!boatmenAvailable.find(boatman => boatman.id == Number(boatmanId))) {
+          return ctx.reply("O barqueiro selecionado não está disponivel nessa data!")
+        }
+      }
+      const prices = await this.pricesService.findAllActiveIds()
+      const telegramUser = await this.telegramUserRepository.findOne({ where: { telegram_id: ctx.from.id } })
+      const messages = await this.telegramUserMessageRepository.find({
+        where: { text: Not("Iniciar agendamento"), telegramUser },
+        order: { updatedAt: "DESC" },
+        take: 10
+      })
+      const contactsData = messages?.find(message => message.updateSubType.includes('contact'))?.text
+
+      const { contacts } = JSON.parse(contactsData)
+      const client = await this.clientsService.findByContact({ contacts })
+      if (!client) {
+        return ctx.reply('Erro ao buscar o Cliente')
+      }
+      const frete: CreateFreteDTO = {
+        prices: prices.map(price => price.id),
+        clientId: client?.id,
+        state: 'Pedido de Agendamento',
+        customPrice: null,
+        date: new Date(`${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}`)
+      }
+
+      if (!isBoatmanUndefined) {
+        frete[boatmanId] = boatmanId
+      }
+      const newFrete = await this.fretesService.create(frete)
+      this.sendActionToAllUsers(
+        {
+          action: "criou um Pedido de Agendamento",
+          moreDetails: 'frete',
+          detailsParams: [newFrete],
+          name: ctx.from.first_name,
+          telegram_id: ctx.from.id
+        }
+        // "criou um Pedido de Agendamento", 
+        // defaultMessages.frete.default(newFrete), 
+        // ctx.from.id, 
+        // ctx.from.first_name
+      )
+      return ctx.reply(defaultMessages.frete.default(newFrete))
+    },
+    "Iniciar agendamento": async (ctx) => {
+      const telegramUser = await this.telegramUserRepository.findOne({ where: { telegram_id: ctx.from.id } })
+      const messages = await this.telegramUserMessageRepository.find({
+        where: { text: Not("Iniciar agendamento"), telegramUser },
+        order: { updatedAt: "DESC" },
+        take: 5
+      })
+      const date = messages.find(message => message.text.includes('Pedido de Agendamento'))?.text?.split('-')[1].trim()
+      const boatmen = await this.fretesService.boatmenAvailable({ date: `${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}` })
+      return ctx.reply("Escolha o barqueiro", {
+        reply_markup: {
+          one_time_keyboard: true,
+          keyboard: [[{ text: `0 - Agendar dia: ${date} - Indefinido` }], ...boatmen.map(key => ([{ text: `${key.id} - Agendar dia: ${date} - ${key.name}` }]))] as any
+        }
+      })
+    },
+    "Salvar contato": async (ctx) => {
+      const messages = await this.telegramUserMessageRepository.find({
+        where: { text: Not("Salvar contato"), updateSubType: 'contact' },
+        order: { updatedAt: "DESC" },
+        take: 1
+      })
+      const savedContactDataMessage = JSON.parse(messages.find(message => message.updateSubType.includes('contact'))?.text)
+      const contacts: Pick<IContact, "desc" | "info">[] = savedContactDataMessage.contacts.map((contact) => ({ desc: contact.desc, info: contact.info }))
+      const clientExists = await this.clientsService.findByContact({ contacts })
+      if (clientExists) {
+        const contactsOfClient = await this.clientsService.getContactsByClientId(clientExists.id)
+        return ctx.reply(`Cliente já existe na base de dados:\n${defaultMessages.client.default(clientExists as Client, contactsOfClient)}`)
+      }
+      const client = await this.clientsService.create({
+        contacts,
+        name: savedContactDataMessage.first_name,
+      }) as Client
+      const contactsOfClient = await this.clientsService.getContactsByClientId(client.id)
+      this.sendActionToAllUsers(
+        {
+          action: "adicionou um novo contato a base de dados",
+          moreDetails: 'client',
+          detailsParams: [client as Client, contactsOfClient],
+          telegram_id: ctx.from.id,
+          name: ctx.from.first_name
+        }
+      )
+      return ctx.reply(`Cliente salvo com sucesso:\n${defaultMessages.client.default(client as Client, contactsOfClient)}`)
+    },
+    [defaultMessages.connectTelegram.default()]: async (ctx) => {
+      const instanceId = ctx.message.text.split(':')[1].trim()
+      const { first_name, id, is_bot, language_code, last_name, username } = ctx.from
+      try {
+        const instance = await this.telegramUserRepository.findOne(instanceId)
+        if (!instance) {
+          return ctx.reply('Id da instancia não existe no banco!')
+        }
+        if (instance && instance.telegram_id) {
+          return ctx.reply("Telegram já foi associado à instancia!")
+        }
+        if (!id) {
+          return ctx.reply("Id nulo!")
+        }
+        await this.telegramUserService.connectTelegramToInstance({
+          instanceId, data: {
+            first_name, telegram_id: id, is_bot, language_code, last_name, username
+          }
+        })
+        return ctx.reply("Telegram associado com sucesso!")
+      } catch (error) {
+        return ctx.reply("Erro ao Associar o Telegram com a Instancia")
+      }
+    }
+  }
   @Cron(CronExpression.EVERY_2_HOURS)
   handleCron() {
     this.logger.debug('Called when the current second is 45');
@@ -201,20 +554,12 @@ export class TelegramService implements OnModuleInit {
     }
   }
   async handleText(ctx: TelegrafContext) {
-    const keywordsToAction: KeywordsActionResponse = {
-      'Visualizar Dados do Cliente': (messageReceived) => {
-        const [str, clienID] = messageReceived?.split(':')
-        this.clientsService.getOne({ id: clienID.trim() })
-          .then((client) => {
-            ctx.reply(defaultMessages.client.default(client, client.contacts), {})
-          })
-      }
-    }
-    Object.keys(keywordsToAction).forEach(keyword => {
+    if (Object.keys(this.keywordsToAction).find(keyword => {
       if (ctx.message.text.includes(keyword)) {
-        keywordsToAction[keyword](ctx.message.text)
+        this.keywordsToAction[keyword](ctx)
+        return true
       }
-    })
+    })) { return }
 
     if (Object.keys(this.menu.Consulta.parameters).includes(ctx.message.text)) {
       const { message, parameters, handleReplyMarkup } = this.menu.Consulta
@@ -257,321 +602,6 @@ export class TelegramService implements OnModuleInit {
         reply_markup: handleReplyMarkup(parameters)
       })
 
-    }
-    else if (ctx.message.text.includes("Visualizar data: ")) {
-      const dateBr = ctx.message.text.split('-')[1].trim()
-      const dateEn = (() => {
-        const dateSplited = dateBr.split('/')
-        return `${dateSplited[2]}/${dateSplited[1].length === 1 ? `0${dateSplited[1]}` : dateSplited[1]}/${dateSplited[0].length === 1 ? `0${dateSplited[0]}` : dateSplited[0]}`
-      }
-      )()
-      this.fretesService.getBusyDates({ fullDate: dateEn, busy: false })
-        .then(fretes => {
-          ctx.reply(defaultMessages.daySchedulingsResume.default(fretes, dateEn), {
-            parse_mode: 'Markdown',
-            reply_markup: {
-              one_time_keyboard: true,
-              keyboard: [
-                [{ text: `Pedido de Agendamento - ${dateBr}` }],
-                [{ text: `Ver Datas Livres - ${dateBr.split('/')[1]}/${dateBr.split('/')[2]} - ${new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(dateEn))}` }],
-                [{ text: `Datas Livres` }],
-              ]
-            }
-          })
-
-        })
-    }
-    else if (ctx.message.text.includes("Ver todos os agendamentos:")) {
-      const [month, year] = ctx.message.text.split(':')[1].trim().split('/')
-      const numberOfResults = 1
-      const response = await this.fretesService.getBusyDates({ month: month, year: year, numberOfResults, pageSelected: 1, busy: true })
-
-      const message = Object.keys(response.dates).map(date => {
-        const fretes: DateBusy[] = response.dates[date] as any
-        return defaultMessages.calendarView.default(fretes)
-      })
-
-      const menu: InlineKeyboardButton[][] = [[]]
-      response.paginate.prevPage
-        && menu[0].push(
-          {
-            text: `<  ${String(response.paginate.prevPage)}`,
-            callback_data: this.generate_actions(
-              {
-                action: 'ALL_DAYS_OF_MONTH_SCHEDULINGS',
-                numberOfResults,
-                month,
-                year,
-                goToPage: response.paginate.prevPage
-              }
-            )
-          })
-      // CONVERTER PARA JWT PQ SÓ ACEITA STRING DE ATÉ 64 BYTES
-      response.paginate.nextPage
-        && menu[0].push(
-          {
-            text: `${String(response.paginate.nextPage)}  >`,
-            callback_data: this.generate_actions({
-              numberOfResults,
-              month, year,
-              goToPage: response.paginate.nextPage,
-              action: 'ALL_DAYS_OF_MONTH_SCHEDULINGS'
-            })
-          }
-        )
-      // callback_data: JSON.stringify({ "numberOfResults": numberOfResults, "month": month, "year": year, "goToPage": response.paginate.nextPage }) })
-      menu[0].push(
-        {
-          text: `${String(Math.ceil(response.paginate.count / numberOfResults))}  >>`,
-          callback_data: this.generate_actions({
-            numberOfResults,
-            month, year,
-            goToPage: Math.ceil(response.paginate.count / numberOfResults),
-            action: 'ALL_DAYS_OF_MONTH_SCHEDULINGS'
-          })
-        }
-      )
-      // callback_data: JSON.stringify({ "numberOfResults": numberOfResults, "month": month, "year": year, "goToPage": Math.ceil(response.paginate.count / numberOfResults) }) })
-      message.push(defaultMessages.dateOfRequest.default())
-      message.push('\n')
-      ctx.reply(message.join('\n'), {
-        reply_markup: {
-          inline_keyboard: menu
-        }
-      })
-
-      return message
-    }
-    else if (ctx.message.text.includes("Agendamentos: ")) {
-      const numberOfResults = 1
-
-      const day = ctx.message.text.split(':')[1].split('|')[0].trim()
-      const searchDays = []
-      if (day.toUpperCase() === "Dias de semana".toUpperCase()) {
-        searchDays.push(...daysHifen.filter((day, index) => ![0, 6, 7, 8].includes(index)))
-      }
-      else if (day.toUpperCase() === "Finais de semana".toUpperCase()) {
-        searchDays.push(daysHifen[6], daysHifen[0])
-      } else {
-        searchDays.push(day)
-      }
-
-      const [month, year] = ctx.message.text.split('|')[1].trim().split('/')
-      const monthName = new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(`${year}/${month}/1`))
-      const weekday = searchDays.map(searchDay => {
-        return daysHifen.findIndex(day => day === searchDay)
-      })
-
-      this.fretesService.getBusyDates({ numberOfResults, busy: true, month: month, year: year, weekdays: searchDays })
-        .then((response) => {
-          const dates = []
-          const freteDays: any = []
-          Object.keys(response.dates).map((date, index) => {
-            if (index < 2) {
-              dates.push(...response.dates[date])
-              freteDays.push(date)
-            }
-          })
-          const menu: InlineKeyboardButton[][] = [[]]
-          response.paginate.prevPage
-            && menu[0].push(
-
-              {
-                text: `<  ${String(response.paginate.prevPage)}`,
-                callback_data: this.generate_actions({
-                  action: 'ONE_DAY_OF_MONTH_SCHEDULINGS',
-                  month, year,
-                  goToPage: response.paginate.prevPage,
-                  numberOfResults,
-                  weekday
-                })
-              })
-          response.paginate.nextPage
-            && menu[0].push({
-              text: `${String(response.paginate.nextPage)}  >`,
-              callback_data: this.generate_actions({
-                action: 'ONE_DAY_OF_MONTH_SCHEDULINGS',
-                month, year,
-                goToPage: response.paginate.nextPage,
-                numberOfResults,
-                weekday
-              })
-            })
-          response.paginate.nextPage
-            && menu[0].push({
-              text: `${String(Math.ceil(response.paginate.count / numberOfResults))}  >>`,
-              callback_data: this.generate_actions({
-                action: 'ONE_DAY_OF_MONTH_SCHEDULINGS',
-                month, year,
-                goToPage: Math.ceil(response.paginate.count / numberOfResults),
-                numberOfResults,
-                weekday
-              })
-            })
-          ctx.reply(
-            dates.length ? defaultMessages.calendarView.default(dates) : defaultMessages.calendarView.noResults,
-            {
-              reply_markup: {
-                inline_keyboard: menu,
-              }
-            })
-        })
-    }
-    else if (ctx.message.text.includes("Verificar disponibilidade: ")) {
-      const day = ctx.message.text.split(':')[1].split('|')[0].trim()
-      const [month, year] = ctx.message.text.split('|')[1].trim().split('/')
-      const monthName = new Intl.DateTimeFormat('pt-br', { month: 'long' }).format(new Date(`${month}/1/${year}`))
-      this.fretesService.getAvailableDates({ month: Number(month), year: Number(year) })
-        .then((response) => {
-          const responseData = Object.keys(response).find(key => key.toUpperCase() === day.toUpperCase())
-          if (response[responseData].length) {
-            return ctx.reply(
-              defaultMessages.copyPasteAvailableDates.default(response[responseData], day)
-              , {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                  keyboard: [
-                    [{ text: `Agendamentos - ${month}/${year} - ${monthName}` }],
-                    [{ text: `Ver Datas Livres - ${month}/${year} - ${monthName}` }],
-                    ...response[responseData]
-                      .map(date => {
-                        const dayBrFormat = []
-                        dayBrFormat.push(date.split('/')[1])
-                        dayBrFormat.push(date.split('/')[0])
-                        dayBrFormat.push(date.split('/')[2])
-                        return [
-                          `Visualizar data: ${new Intl.DateTimeFormat(
-                            'pt-br',
-                            {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })
-                            .format(
-                              new Date(date)
-                            )} - ${dayBrFormat.join('/')}`
-                        ]
-                      })
-                  ]
-                }
-              })
-          } else {
-            return ctx.reply(
-              defaultMessages.copyPasteAvailableDates.noResults
-              , {
-                reply_markup: {
-                  keyboard: [
-                    [{ text: `Agendamentos - ${month}/${year} - ${monthName}` }],
-                    [{ text: `Ver Datas Livres - ${month}/${year} - ${monthName}` }],
-                  ]
-                }
-              })
-          }
-        })
-    }
-    else if (ctx.message.text.includes(defaultMessages.connectTelegram.default())) {
-      console.log("Associando telegram")
-      const instanceId = ctx.message.text.split(':')[1].trim()
-      const { first_name, id, is_bot, language_code, last_name, username } = ctx.from
-      try {
-        const instance = await this.telegramUserRepository.findOne(instanceId)
-        if (!instance) {
-          return ctx.reply('Id da instancia não existe no banco!')
-        }
-        if (instance && instance.telegram_id) {
-          return ctx.reply("Telegram já foi associado à instancia!")
-        }
-        if (!id) {
-          return ctx.reply("Id nulo!")
-        }
-        await this.telegramUserService.connectTelegramToInstance({
-          instanceId, data: {
-            first_name, telegram_id: id, is_bot, language_code, last_name, username
-          }
-        })
-        return ctx.reply("Telegram associado com sucesso!")
-      } catch (error) {
-        return ctx.reply("Erro ao Associar o Telegram com a Instancia")
-      }
-    }
-    else if (ctx.message.text.includes("Pedido de Agendamento - ")) {
-      return ctx.reply("Envie o contato do cliente salvo no seu celular.")
-    }
-    else if (ctx.message.text.includes("Agendar dia")) {
-      const [boatmanId, dateWithText, boatmanName] = ctx.message.text.split('-')
-      const date = dateWithText.split(':')[1].trim()
-      const { fretes, count } = await this.fretesService.verifyIfDateIsAvailable(`${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}`)
-      if (count >= 2) {
-        ctx.reply("Não há vaga nessa data")
-        return ctx.reply(fretes.map(frete => defaultMessages.frete.default(frete)).join('\n'))
-      }
-      const boatmenAvailable = await this.fretesService.boatmenAvailable({ date: `${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}` })
-      const isBoatmanUndefined = String(boatmanId).trim() == '0'
-
-      if (!boatmenAvailable.length && isBoatmanUndefined) {
-        return ctx.reply("Não tem barqueiros disponiveis nessa data!")
-      }
-      if (!isBoatmanUndefined) {
-        if (!boatmenAvailable.find(boatman => boatman.id == Number(boatmanId))) {
-          return ctx.reply("O barqueiro selecionado não está disponivel nessa data!")
-        }
-      }
-      const prices = await this.pricesService.findAllActiveIds()
-      const telegramUser = await this.telegramUserRepository.findOne({ where: { telegram_id: ctx.from.id } })
-      const messages = await this.telegramUserMessageRepository.find({
-        where: { text: Not("Iniciar agendamento"), telegramUser },
-        order: { updatedAt: "DESC" },
-        take: 10
-      })
-      const contactsData = messages?.find(message => message.updateSubType.includes('contact'))?.text
-
-      const { contacts } = JSON.parse(contactsData)
-      const client = await this.clientsService.findByContact({ contacts })
-      if (!client) {
-        return ctx.reply('Erro ao buscar o Cliente')
-      }
-      const frete: CreateFreteDTO = {
-        prices: prices.map(price => price.id),
-        clientId: client?.id,
-        state: 'Pedido de Agendamento',
-        customPrice: null,
-        date: new Date(`${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}`)
-      }
-
-      if (!isBoatmanUndefined) {
-        frete[boatmanId] = boatmanId
-      }
-      const newFrete = await this.fretesService.create(frete)
-      this.sendActionToAllUsers(
-        {
-          action: "criou um Pedido de Agendamento",
-          moreDetails: 'frete',
-          detailsParams: [newFrete],
-          name: ctx.from.first_name,
-          telegram_id: ctx.from.id
-        }
-        // "criou um Pedido de Agendamento", 
-        // defaultMessages.frete.default(newFrete), 
-        // ctx.from.id, 
-        // ctx.from.first_name
-      )
-      return ctx.reply(defaultMessages.frete.default(newFrete))
-    }
-    else if (ctx.message.text.includes("Iniciar agendamento")) {
-      const telegramUser = await this.telegramUserRepository.findOne({ where: { telegram_id: ctx.from.id } })
-      const messages = await this.telegramUserMessageRepository.find({
-        where: { text: Not("Iniciar agendamento"), telegramUser },
-        order: { updatedAt: "DESC" },
-        take: 5
-      })
-      const date = messages.find(message => message.text.includes('Pedido de Agendamento'))?.text?.split('-')[1].trim()
-      const boatmen = await this.fretesService.boatmenAvailable({ date: `${date.split('/')[2]}/${date.split('/')[1]}/${date.split('/')[0]}` })
-      return ctx.reply("Escolha o barqueiro", {
-        reply_markup: {
-          one_time_keyboard: true,
-          keyboard: [[{ text: `0 - Agendar dia: ${date} - Indefinido` }], ...boatmen.map(key => ([{ text: `${key.id} - Agendar dia: ${date} - ${key.name}` }]))] as any
-        }
-      })
     }
     else if (ctx.message.text.substr(0, 6).includes('clien')) {
       const clienID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(6))
@@ -638,35 +668,6 @@ export class TelegramService implements OnModuleInit {
           message += defaultMessages.dateOfRequest.default()
           ctx.reply(message, {})
         })
-    }
-    else if (ctx.message.text === "Salvar contato") {
-      const messages = await this.telegramUserMessageRepository.find({
-        where: { text: Not("Salvar contato"), updateSubType: 'contact' },
-        order: { updatedAt: "DESC" },
-        take: 1
-      })
-      const savedContactDataMessage = JSON.parse(messages.find(message => message.updateSubType.includes('contact'))?.text)
-      const contacts: Pick<IContact, "desc" | "info">[] = savedContactDataMessage.contacts.map((contact) => ({ desc: contact.desc, info: contact.info }))
-      const clientExists = await this.clientsService.findByContact({ contacts })
-      if (clientExists) {
-        const contactsOfClient = await this.clientsService.getContactsByClientId(clientExists.id)
-        return ctx.reply(`Cliente já existe na base de dados:\n${defaultMessages.client.default(clientExists as Client, contactsOfClient)}`)
-      }
-      const client = await this.clientsService.create({
-        contacts,
-        name: savedContactDataMessage.first_name,
-      }) as Client
-      const contactsOfClient = await this.clientsService.getContactsByClientId(client.id)
-      this.sendActionToAllUsers(
-        {
-          action: "adicionou um novo contato a base de dados",
-          moreDetails: 'client',
-          detailsParams: [client as Client, contactsOfClient],
-          telegram_id: ctx.from.id,
-          name: ctx.from.first_name
-        }
-      )
-      return ctx.reply(`Cliente salvo com sucesso:\n${defaultMessages.client.default(client as Client, contactsOfClient)}`)
     }
     else if (ctx.message.text === "Visualizar Pedidos de Agendamento" || ctx.message.text.includes('/VerPedidosDeAgendamento')) {
       const numberOfResults = 1
@@ -768,8 +769,6 @@ export class TelegramService implements OnModuleInit {
 
     }
     else {
-      console.log(ctx.message.text);
-
       ctx.reply('Comando desconhecido, favor tentar novamente', {
         reply_markup: {
           keyboard: [
@@ -779,9 +778,7 @@ export class TelegramService implements OnModuleInit {
           ]
         }
       })
-
     }
-
   }
   useMiddlewaresForUpdateTypesAndSubTypes(ctx: TelegrafContext, next: () => Promise<void>) {
     const activeUpdateTypes = Object.keys(this.middlewares).filter(midd => this.middlewares[midd])
