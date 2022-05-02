@@ -548,7 +548,6 @@ export class TelegramService implements OnModuleInit {
         if (!isBoatmanUndefined) {
           frete["boatmanId"] = boatmanId
         }
-        console.log(boatmanId, frete[boatmanId])
         const newFrete = await this.fretesService.create(frete)
         this.sendActionToAllUsers(
           {
@@ -757,7 +756,6 @@ export class TelegramService implements OnModuleInit {
       verifyMatch: (ctx, keyword) => ctx.message.text.substr(0, 6).includes(keyword),
       execute: async (ctx) => {
         const schedID = formatString('XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', ctx.message.text.substr(6))
-        console.log(schedID)
         const { message, extra } = await this.getOneSchedulingDetails(schedID, ctx)
         return ctx.editMessageText(message, extra)
       }
