@@ -1037,7 +1037,7 @@ export class TelegramService implements OnModuleInit {
     )
     const lastPage = Math.ceil(response.paginate.count / numberOfResults)
     Number(response.paginate.prevPage) >= 2
-      && menu[0].push(
+      && menu[2].push(
         {
           text: `<< 1`,
           callback_data: generate_paginate_actions({
@@ -1049,7 +1049,7 @@ export class TelegramService implements OnModuleInit {
           })
         })
     response.paginate.prevPage
-      && menu[0].push(
+      && menu[2].push(
         {
           text: `<  ${String(response.paginate.prevPage)}`,
           callback_data: generate_paginate_actions({
@@ -1062,7 +1062,7 @@ export class TelegramService implements OnModuleInit {
         })
 
     response.paginate.nextPage
-      && menu[0].push(
+      && menu[2].push(
         {
           text: `${String(response.paginate.nextPage)}  >`,
           callback_data: generate_paginate_actions({
@@ -1074,7 +1074,7 @@ export class TelegramService implements OnModuleInit {
           })
         })
     response.paginate.nextPage
-      && lastPage > response.paginate.nextPage && menu[0].push(
+      && lastPage > response.paginate.nextPage && menu[2].push(
         {
           text: `${String(lastPage)}  >>`,
           callback_data: generate_paginate_actions({
@@ -1703,7 +1703,6 @@ export class TelegramService implements OnModuleInit {
 
   async getOneSchedulingDetails(schedID: string, ctx: TelegrafContext) {
     const { frete } = await this.fretesService.getOne({ id: schedID })
-    this.logger.debug(JSON.stringify(frete))
     let message = defaultMessages.freteData.default(frete)
     message += defaultMessages.dateOfRequest.default()
     type TActionToDoInMessage = {
