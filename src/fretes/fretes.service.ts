@@ -291,6 +291,7 @@ export class FretesService {
 
     const page = pageSelected || 1;
     const skip = (page - 1) * take;
+
     // eslint-disable-next-line prefer-const
     let [fretes, total] = await this.fretesRepository.findAndCount({
       relations: ["client", 'boatman'],
@@ -299,7 +300,7 @@ export class FretesService {
         fullDate ?
           { date: new Date(fullDateConverted.getFullYear(), fullDateConverted.getMonth(), fullDateConverted.getUTCDate()) }
           :
-          { date: Between(initialDate, finalDate) },
+          { date: Between(initialDate, finalDate), },
       // select:['date', 'id', 'state', 'boatman', 'client', ],
       take: take,
       skip: weekdays ? 0 : skip

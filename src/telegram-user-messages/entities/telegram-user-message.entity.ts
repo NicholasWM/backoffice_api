@@ -23,16 +23,16 @@ export class TelegramUserMessage extends BaseEntity {
 	@Column({ nullable: true, type: "varchar" })
 	chat_id: number
 
-	@Column({ nullable: true, type: "varchar", length: 200 })
+	@Column({ nullable: true, type: "varchar", length: 500 })
 	text: string
 
 	@Column({ nullable: true, type: "varchar", length: 200 })
 	updateSubType: string
 
-	@ManyToOne(type => TelegramUser, TelegramUser => TelegramUser.messages, {nullable:false})
+	@ManyToOne(type => TelegramUser, TelegramUser => TelegramUser.messages, { nullable: false })
 	@JoinColumn({ name: "telegramUserId" })
-    telegramUser: TelegramUser;
-	
+	telegramUser: TelegramUser;
+
 	@CreateDateColumn()
 	createdAt: Date;
 

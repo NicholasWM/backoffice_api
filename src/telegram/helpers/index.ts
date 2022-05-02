@@ -5,53 +5,53 @@ import { Frete } from "src/fretes/fretes.entity"
 import { GetBusyDatesResponse, DateBusy } from "src/fretes/interfaces"
 import { IState } from "src/fretes/types"
 import { dateMonthDayYearWrited } from "src/utils/dateHelper"
-import * as tt  from "telegraf/typings/telegram-types"
-import { IDefaultMessages, ParseVCardResponse } from "../types"
+import * as tt from "telegraf/typings/telegram-types"
+import { IDefaultMessages, IGenerateConfirmActions, IGeneratePaginateActions, ParseVCardResponse } from "../types"
 
 export const emojis = {
-  '[00]':'0️⃣ ',
-  '[01]':'1️⃣ ',
-  '[02]':'2️⃣ ',
-  '[03]':'3️⃣ ',
-  '[04]':'4️⃣ ',
-  '[05]':'5️⃣ ',
-  '[06]':'6️⃣ ',
-  '[07]':'7️⃣ ',
-  '[08]':'8️⃣ ',
-  '[09]':'9️⃣ ',
-  '[10]':'🔟 ',
-  '[11]':'🟥 ',
-  '[13]':'🟧 ',
-  '[14]':'🟨 ',
-  '[15]':'🟩 ',
-  '[23]':' 📆🎣',
-  '[19]':'🎣📆 ',
-  '[20]':'📆🟥 ',
-  '[21]':'📆🟩 ',
-  '[22]':'📆🟦 ',
-  '[16]':'🟦 ',
-  '[17]':'🎣 ',
-  '[18]':'📆 ',
+  '[00]': '0️⃣ ',
+  '[01]': '1️⃣ ',
+  '[02]': '2️⃣ ',
+  '[03]': '3️⃣ ',
+  '[04]': '4️⃣ ',
+  '[05]': '5️⃣ ',
+  '[06]': '6️⃣ ',
+  '[07]': '7️⃣ ',
+  '[08]': '8️⃣ ',
+  '[09]': '9️⃣ ',
+  '[10]': '🔟 ',
+  '[11]': '🟥 ',
+  '[13]': '🟧 ',
+  '[14]': '🟨 ',
+  '[15]': '🟩 ',
+  '[23]': ' 📆🎣',
+  '[19]': '🎣📆 ',
+  '[20]': '📆🟥 ',
+  '[21]': '📆🟩 ',
+  '[22]': '📆🟦 ',
+  '[16]': '🟦 ',
+  '[17]': '🎣 ',
+  '[18]': '📆 ',
 }
 
 export const monthMessage = "Qual Mes?"
 export const months = {
-  textMessage:monthMessage, 
-  extra:{
-    reply_markup:{
-      keyboard:[
-        [{text:'[18] Janeiro'}],
-        [{text:'[18] Fevereiro'}],
-        [{text:'[18] Março'}],
-        [{text:'[18] Abril'}],
-        [{text:'[18] Maio'}],
-        [{text:'[18] Junho'}],
-        [{text:'[18] Julho'}],
-        [{text:'[18] Agosto'}],
-        [{text:'[18] Setembro'}],
-        [{text:'[18] Outubro'}],
-        [{text:'[18] Novembro'}],
-        [{text:'[18] Dezembro'}],
+  textMessage: monthMessage,
+  extra: {
+    reply_markup: {
+      keyboard: [
+        [{ text: '[18] Janeiro' }],
+        [{ text: '[18] Fevereiro' }],
+        [{ text: '[18] Março' }],
+        [{ text: '[18] Abril' }],
+        [{ text: '[18] Maio' }],
+        [{ text: '[18] Junho' }],
+        [{ text: '[18] Julho' }],
+        [{ text: '[18] Agosto' }],
+        [{ text: '[18] Setembro' }],
+        [{ text: '[18] Outubro' }],
+        [{ text: '[18] Novembro' }],
+        [{ text: '[18] Dezembro' }],
       ]
     }
   },
@@ -59,106 +59,106 @@ export const months = {
 
 export const dayMessage = "Qual tipo de dia?"
 export const typeOfDay = {
-  textMessage:dayMessage,
+  textMessage: dayMessage,
   extra:
-    {
-      reply_markup:{
-        keyboard:[
-          [{'text': '[00] Ver todas'}],
-          [{'text': '[01] Dias de Semana'}],
-          [{'text': '[02] Final de Semana'}],
-          [{'text': '[03] Sabados'}],
-          [{'text': '[04] Domingos'}],
-          [{'text': '[05] Segunda'}],
-          [{'text': '[06] Terça'}],
-          [{'text': '[07] Quarta'}],
-          [{'text': '[08] Quinta'}],
-          [{'text': '[09] Sexta'}],
-          [{'text': '[10] Sabado'}],
-        ]
-      }
+  {
+    reply_markup: {
+      keyboard: [
+        [{ 'text': '[00] Ver todas' }],
+        [{ 'text': '[01] Dias de Semana' }],
+        [{ 'text': '[02] Final de Semana' }],
+        [{ 'text': '[03] Sabados' }],
+        [{ 'text': '[04] Domingos' }],
+        [{ 'text': '[05] Segunda' }],
+        [{ 'text': '[06] Terça' }],
+        [{ 'text': '[07] Quarta' }],
+        [{ 'text': '[08] Quinta' }],
+        [{ 'text': '[09] Sexta' }],
+        [{ 'text': '[10] Sabado' }],
+      ]
     }
+  }
 }
 
 export const availableDayMessage = "Qual dia?"
 export const availableDays = {
-  textMessage:availableDayMessage, 
+  textMessage: availableDayMessage,
   extra:
-    {
-      reply_markup:{
+  {
+    reply_markup: {
       keyboard:
         [
-          [{'text': '[21] Terça 03/02/2021'}],
-          [{'text': '[20] Segunda 01/02/2021'}],
-          [{'text': '[21] Quarta 04/02/2021'}],
-          [{'text': '[22] Quinta 05/02/2021'}],
+          [{ 'text': '[21] Terça 03/02/2021' }],
+          [{ 'text': '[20] Segunda 01/02/2021' }],
+          [{ 'text': '[21] Quarta 04/02/2021' }],
+          [{ 'text': '[22] Quinta 05/02/2021' }],
         ],
-      }
-    },
+    }
+  },
 }
 export const parseResponseEmojis = (textMessage) => {
   let finaltext = textMessage
   Object.keys(emojis).forEach(emoji => {
-    if(finaltext.includes(emojis[emoji])){
+    if (finaltext.includes(emojis[emoji])) {
       finaltext = finaltext.replace(emojis[emoji], emoji)
     }
   });
   return finaltext
 }
 export const startMessage = "Escolha uma das opções:"
-export const startOptions:{textMessage:string, extra:any} = {
-  textMessage:startMessage,
+export const startOptions: { textMessage: string, extra: any } = {
+  textMessage: startMessage,
   extra:
-    {
-      reply_markup:{
-        keyboard:
-          [
-            [{'text': '[19] Consulta [23]'}],
-          ],
-        }
-    },
+  {
+    reply_markup: {
+      keyboard:
+        [
+          [{ 'text': '[19] Consulta [23]' }],
+        ],
+    }
+  },
 }
 
-export const convertCodesOfEmojisInEmojis = (options)=>{
+export const convertCodesOfEmojisInEmojis = (options) => {
   let keyboard = []
   options.extra.reply_markup.keyboard.forEach(element => {
-    
+
     let finalText = element[0].text
     Object.keys(emojis).forEach(emoji => {
-      if(finalText.includes(emoji)){
+      if (finalText.includes(emoji)) {
         finalText = finalText.replace(emoji, emojis[emoji])
       }
     });
-    
+
     keyboard.push([finalText])
   });
-  return {...options ,extra:{reply_markup:{keyboard}}}
+  return { ...options, extra: { reply_markup: { keyboard } } }
 }
 
 export const optionsCallbackFunctions = {
-  '[19]': ()=> convertCodesOfEmojisInEmojis(months), // Opção Consulta
-  '[20]': ()=> convertCodesOfEmojisInEmojis(startOptions), // Dia
-  '[21]': ()=> convertCodesOfEmojisInEmojis(startOptions), // Dia
-  '[22]': ()=> convertCodesOfEmojisInEmojis(startOptions), // Dia
-  '[18]': ()=> convertCodesOfEmojisInEmojis(typeOfDay),  // Mes
-  '[00]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[01]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[02]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[03]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[04]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[05]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[06]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[07]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[08]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[09]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
-  '[10]': ()=> convertCodesOfEmojisInEmojis(availableDays), // Type of Day
+  '[19]': () => convertCodesOfEmojisInEmojis(months), // Opção Consulta
+  '[20]': () => convertCodesOfEmojisInEmojis(startOptions), // Dia
+  '[21]': () => convertCodesOfEmojisInEmojis(startOptions), // Dia
+  '[22]': () => convertCodesOfEmojisInEmojis(startOptions), // Dia
+  '[18]': () => convertCodesOfEmojisInEmojis(typeOfDay),  // Mes
+  '[00]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[01]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[02]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[03]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[04]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[05]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[06]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[07]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[08]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[09]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day 
+  '[10]': () => convertCodesOfEmojisInEmojis(availableDays), // Type of Day
 }
 
-export const generateOptions = function(){
+export const generateOptions = function () {
   const options = [startOptions, availableDays, typeOfDay, months]
   let generatedOptions = {}
-  options.forEach(option => option.extra.reply_markup.keyboard.map(item=> {
-    generatedOptions[item[0].text] = optionsCallbackFunctions[item[0].text.substring(0,4)]
+  options.forEach(option => option.extra.reply_markup.keyboard.map(item => {
+    generatedOptions[item[0].text] = optionsCallbackFunctions[item[0].text.substring(0, 4)]
   }))
   return generatedOptions
 }
@@ -300,7 +300,6 @@ export const defaultMessages: IDefaultMessages = {
       message.push(`${stateColor[data?.state]}  Status: ${data?.state}  ${stateColor[data?.state]}\n`)
       message.push(data?.boatman ? `⛴️  Barqueiro: ${data?.boatman?.name}  ⛴️\n` : "")
       message.push(data?.client ? `🎣  Cliente: ${data?.client?.name}  🎣\n` : "")
-      message.push(`ℹ️  Dados do Agendamento  ℹ️\n${makeLinks('sched', data.id)}`)
       return message.join('')
     }
   },
@@ -327,41 +326,41 @@ export const defaultMessages: IDefaultMessages = {
       message.push('\n==========\n\n')
       message.push(`💵  Deposito: R$${frete.depositPaid}  💵\n`)
       message.push('\n==========\n\n')
-      message.push('💰  Tabela de Preços  💰\n')
-      message.push('\n==========\n')
-      message.push(`${frete.customPrice || frete?.prices?.map(
-        price => {
-          const priceMessage = []
-          priceMessage.push(`\n🪙  ${price.description}: R$${price.value}  🪙\n`)
-          return priceMessage.join('')
-        }).join('------------------')}
-        `)
-      message.push('\n==========\n')
-      message.push(`\n🔎👇  Consultar dados do Cliente  👇🔎`)
-      message.push(`\n/clien${frete.clientId.split('-').join('')}`)
+      // message.push('💰  Tabela de Preços  💰\n')
+      // message.push('\n==========\n')
+      // message.push(`${frete.customPrice || frete?.prices?.map(
+      //   price => {
+      //     const priceMessage = []
+      //     priceMessage.push(`\n🪙  ${price.description}: R$${price.value}  🪙\n`)
+      //     return priceMessage.join('')
+      //   }).join('------------------')}
+      //   `)
+      // message.push('\n==========\n')
+      // message.push(`\n🔎👇  Consultar dados do Cliente  👇🔎`)
+      // message.push(`\n/clien${frete.clientId.split('-').join('')}`)
 
 
       type TActionToDoInMessage = {
         [type in Partial<IState>]?: (msg: string[]) => void
       }
-      const modifyMessagePerActionType: TActionToDoInMessage = {
-        'Confirmada': (msg) => {
-          msg.push(`\n\nClique para cancelar o agendamento:\n`)
-          msg.push(`\n❌${makeLinks('cancelsch', frete.id)}\n`)
-        },
-        'Marcada': (msg) => {
-          msg.push(`\n\nClique para confirmar o agendamento:\n`)
-          msg.push(`\n✅${makeLinks('confirmsch', frete.id)}`)
-          msg.push(`\n\nClique para cancelar o agendamento:\n`)
-          msg.push(`\n❌${makeLinks('cancelsch', frete.id)}\n`)
-        },
-        'Pedido de Agendamento': (msg) => {
-          msg.push(`\n\nJá marcou na agenda?`)
-          msg.push(`\nClique para concluir o Pedido de Agendamento:\n`)
-          msg.push(`\n${makeLinks('booksch', frete.id)}\n`)
-        },
-      }
-      modifyMessagePerActionType[frete.state] != undefined && modifyMessagePerActionType[frete.state](message)
+      // const modifyMessagePerActionType: TActionToDoInMessage = {
+      //   'Confirmada': (msg) => {
+      //     msg.push(`\n\nClique para cancelar o agendamento:\n`)
+      //     msg.push(`\n❌${makeLinks('cancelsch', frete.id)}\n`)
+      //   },
+      //   'Marcada': (msg) => {
+      //     msg.push(`\n\nClique para confirmar o agendamento:\n`)
+      //     msg.push(`\n✅${makeLinks('confirmsch', frete.id)}`)
+      //     msg.push(`\n\nClique para cancelar o agendamento:\n`)
+      //     msg.push(`\n❌${makeLinks('cancelsch', frete.id)}\n`)
+      //   },
+      //   'Pedido de Agendamento': (msg) => {
+      //     msg.push(`\n\nJá marcou na agenda?`)
+      //     msg.push(`\nClique para concluir o Pedido de Agendamento:\n`)
+      //     msg.push(`\n${makeLinks('booksch', frete.id)}\n`)
+      //   },
+      // }
+      // modifyMessagePerActionType[frete.state] != undefined && modifyMessagePerActionType[frete.state](message)
       return message.join('')
     }
   },
@@ -429,6 +428,7 @@ export const defaultMessages: IDefaultMessages = {
   calendarView: {
     noResults: "Sem resultados!",
     default: (dates: DateBusy[]) => {
+
       function getMessage(boatman: Boatman, client: Client, id: string, state, dateOfScheduling: Date) {
         let message = ""
 
@@ -454,6 +454,7 @@ export const defaultMessages: IDefaultMessages = {
         message += `${makeLinks('sched', id)}`
         return message
       }
+      console.log(dates[0].client)
       const message = dates.map((frete: DateBusy) => {
         const { boatman, client, date, id, state } = frete
         return getMessage(
@@ -468,10 +469,40 @@ export const defaultMessages: IDefaultMessages = {
     },
   },
   dateOfRequest: {
-    default: () => `\n========================================\n📌  Dados consultados em ${new Intl.DateTimeFormat('pt-br', { day: '2-digit', year: 'numeric', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date())}  📌\n========================================`
+    default: () => `\n==============================\n📌  Dados consultados em ${new Intl.DateTimeFormat('pt-br', { day: '2-digit', year: 'numeric', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date())}  📌\n==============================`
   },
   schedulingRequest: {
     default: () => `Existem pedidos de agendamento em aberto!\n\n Clique aqui para visualizar os pedidos em aberto: \n\n /VerPedidosDeAgendamento`,
     noResults: ""
   }
+}
+
+export function generate_confirm_actions({
+  action,
+  targetId,
+}: Partial<IGenerateConfirmActions>) {
+  const data = [
+    action,
+    targetId,
+  ]
+  return JSON.stringify(data)
+}
+
+export function generate_paginate_actions({
+  action,
+  numberOfResults,
+  month,
+  year,
+  goToPage,
+  weekday
+}: Partial<IGeneratePaginateActions>) {
+  const data = [
+    action,
+    numberOfResults,
+    goToPage,
+    month,
+    year,
+    weekday
+  ]
+  return JSON.stringify(data)
 }

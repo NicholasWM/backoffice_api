@@ -33,7 +33,8 @@ export type ParseVCardResponse = {
 }
 
 
-export type TOneMonthSchedulingsCallbackRequestText = [ActionCallbackName, number, number, string, string, number[]]
+export type TOneMonthSchedulingsCallbackRequestText = [ListsActionCallbackName, number, number, string, string, number[]]
+export type IDefaultExecuteActionCallbackQueryAction = [ExecuteActionCallbackName, string, number]
 
 export interface IOneMonthSchedulingsCallbackQueryAction {
   ctx: TelegrafContext,
@@ -55,7 +56,7 @@ export interface IAllMonthSchedulingsCallbackQueryAction {
 
 export interface IAllSchedulingsRequestsCallbackQueryAction {
   ctx: TelegrafContext,
-  action: ActionCallbackName,
+  action: ListsActionCallbackName,
   numberOfResults: number,
   goToPage: number,
 }
@@ -87,19 +88,46 @@ export interface ISendActionToAllUsers {
   name: string
 }
 
-export type ActionCallbackName = 'ALL_DAYS_OF_MONTH_SCHEDULINGS' | 'ONE_DAY_OF_MONTH_SCHEDULINGS' | 'ALL_SCHEDULINGS_REQUESTS'
+export type ListsActionCallbackName =
+  'ALL_DAYS_OF_MONTH_SCHEDULINGS' |
+  'ONE_DAY_OF_MONTH_SCHEDULINGS' |
+  'ALL_SCHEDULINGS_REQUESTS' |
+  'CANCEL_SCHEDULING'
 
-export type CBQueryTelegramActionToFunction = {
-  [nome in ActionCallbackName]?: (data: TOneMonthSchedulingsCallbackRequestText, ctx: TelegrafContext) => void
+export type ExecuteActionCallbackName =
+  'CANCEL_SCHED' |
+  'CONFIRM_SCHED' |
+  'BOOK_SCHED' |
+  'ONE_SCHED_DETAILS' |
+  'ASK_BOOK_SCHED' |
+  'CLIENT_DETAILS' |
+  'ASK_PRICES_SCHED' |
+  'ASK_CANCEL_SCHED' |
+  'ASK_CONFIRM_SCHED' |
+  'PRICES_SCHED' |
+  'ALL_CLIENT_SCHEDULINGS' |
+  'RETURN_TO'
+
+export type CBQueryTelegramListActionToFunction = {
+  [nome in ListsActionCallbackName]?: (data: TOneMonthSchedulingsCallbackRequestText, ctx: TelegrafContext) => void
+}
+export type CBQueryTelegramExecuteActionToFunction = {
+  [nome in ExecuteActionCallbackName]?: (data: IDefaultExecuteActionCallbackQueryAction, ctx: TelegrafContext) => void
 }
 
-export interface IGenerateActions {
-  action: ActionCallbackName,
+export interface IGeneratePaginateActions {
+  action: ListsActionCallbackName,
   numberOfResults: number,
   month: string,
   year: string,
   goToPage: number,
   weekday: number[]
+}
+
+export type TEntityTypes = 'SCHEDULING'
+export interface IGenerateConfirmActions {
+  action: ExecuteActionCallbackName,
+  targetId: string,
 }
 
 export interface MenuResponse {
@@ -113,8 +141,19 @@ export interface MenuResponse {
   };
 }
 
+export type TMatchTypes = 'EXACT' | 'SIMPLE_INCLUDE'
+
+export type TMatchTypesOrder = { [name in TMatchTypes]?: ((ctx: TelegrafContext) => void)[] }
+export const MATCH_TYPES_ORDER: TMatchTypes[] = [
+  "EXACT",
+  "SIMPLE_INCLUDE"
+]
 export interface KeywordsActionResponse {
-  [date: string]: (ctx: TelegrafContext) => void,
+  [date: string]: {
+    matchType: Partial<TMatchTypes>,
+    verifyMatch: (ctx: TelegrafContext, keyword: string) => boolean,
+    execute: (ctx: TelegrafContext) => void,
+  }
 }
 
 export type Middlewares = {
