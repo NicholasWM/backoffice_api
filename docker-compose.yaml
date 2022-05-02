@@ -25,7 +25,7 @@ services:
   backoffice_db_postgres: # Example Service
     image: postgres:alpine
     ports:
-      - "7001:3306"
+      - "5432:5432"
     container_name: backoffice_db_prod
     restart: always
     environment:

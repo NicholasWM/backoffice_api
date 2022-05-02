@@ -204,7 +204,7 @@ export class TelegramService implements OnModuleInit {
   }
 
   private token = this.configService.get<string>('TELEGRAM_TOKEN');
-  public bot = new Telegraf("5108551664:AAHAhWcgCCePtG0cAjbESvauPxwTjOfEPTo");
+  public bot = new Telegraf("5126550966:AAF2GGfLGS4zntysBiEfd8piIr3qEWkLpVo");
   sendMessage(chatId: string | number, message: string): void {
     this.bot.telegram.sendMessage(chatId, message)
   }
@@ -965,6 +965,7 @@ export class TelegramService implements OnModuleInit {
               return finalObj
             }
             )()
+            
             return reordered
           })()
         },
