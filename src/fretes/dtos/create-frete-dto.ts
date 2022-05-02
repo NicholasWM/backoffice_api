@@ -5,13 +5,13 @@ import { IState } from '../types';
 export class CreateFreteDTO {
 	@IsNotEmpty()
 	@ApiProperty({
-		description:"4daa9f36-accd-49d1-8550-41e43f31520d",
+		description: "4daa9f36-accd-49d1-8550-41e43f31520d",
 	})
 	clientId: string;
 
 	@ApiProperty({
-		description:"4daa9f36-accd-49d1-8550-41e43f31520d",
-		default:1
+		description: "4daa9f36-accd-49d1-8550-41e43f31520d",
+		default: 1
 	})
 	boatmanId?: string;
 
@@ -22,15 +22,15 @@ export class CreateFreteDTO {
 
 	@IsNotEmpty()
 	@ApiProperty({
-		description:"2021/11/27",
+		description: "2021/11/27",
 	})
-  date:Date;
+	date: Date;
 
 	@ApiProperty()
-  customPrice:number;
+	customPrice: number;
 
 	@ApiProperty({
-		default:'Marcada'
+		default: 'Marcada'
 	})
-  state?:IState;
+	state?: IState;
 }
