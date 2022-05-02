@@ -17,38 +17,44 @@ export class ClientsService {
     @InjectRepository(Contact)
     private contactsRepository: ContactRepository,
   ) { }
-  async create(createClientDTO: CreateClientDTO): Promise<Client| false> {
-    const contact = (await Promise.all(createClientDTO.contacts.map(contact => {
-      return this.contactsRepository.findOne({
-        where: {
-          info: contact.info
+  async create(createClientDTO: CreateClientDTO): Promise<Client | false> {
+    try {
+      const contact = (await Promise.all(createClientDTO.contacts.map(contact => {
+        return this.contactsRepository.findOne({
+          where: {
+            info: contact.info
+          }
+        })
+      }))).find(item => item)
+
+      if (!contact) {
+        const client = await this.clientsRepository.createClient(createClientDTO)
+        if (client) {
+          const contacts = await Promise.all(createClientDTO.contacts.map(async contact => {
+            return await this.contactsRepository.create({
+              clientId: client.id,
+              info: contact.info,
+              status: true,
+              description: contact.desc
+            }).save()
+          }))
+          client.contacts = contacts
+          return client
         }
-      })
-    }))).find(item => item)
-    
-    if (!contact) {
-      const client = await this.clientsRepository.createClient(createClientDTO)
-      const contacts = await Promise.all(createClientDTO.contacts.map(async contact => {
-        return await this.contactsRepository.create({
-          clientId: client.id,
-          info: contact.info,
-          status: true,
-          description: contact.desc
-        }).save()
-      }))
-      client.contacts = contacts
-      return client
+      }
+
+      return false
+    } catch (error) {
+      console.log(error)
     }
-    
-    return false
   }
 
-  async getContactsByClientId(id: string){
-    const contacts = await this.contactsRepository.find({where:{clientId: id}})
+  async getContactsByClientId(id: string) {
+    const contacts = await this.contactsRepository.find({ where: { clientId: id } })
     return contacts
   }
 
-  async findByContact(findClientByContactDTO: FindClientByContactDTO): Promise<Client| false> {
+  async findByContact(findClientByContactDTO: FindClientByContactDTO): Promise<Client | false> {
     const contact = (await Promise.all(findClientByContactDTO.contacts.map(contact => {
       return this.contactsRepository.findOne({
         where: {
@@ -56,13 +62,13 @@ export class ClientsService {
         }
       })
     }))).find(item => item)
-    
+
     if (!contact) {
       return false
     }
     const client = await this.clientsRepository.findOne({
-      select:['email', 'name', 'id'],
-      where:{
+      select: ['email', 'name', 'id'],
+      where: {
         id: contact.clientId
       }
     })

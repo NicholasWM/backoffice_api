@@ -8,34 +8,33 @@ import {
 	PrimaryGeneratedColumn,
 	Column,
 	CreateDateColumn,
-	UpdateDateColumn, 
+	UpdateDateColumn,
 	OneToMany,
 	JoinColumn,
 	OneToOne,
 } from 'typeorm'
 import { Frete } from '../fretes/fretes.entity';
 @Entity()
-@Unique(['name'])
-export class Client extends BaseEntity{
+export class Client extends BaseEntity {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({nullable:true, type: "varchar", length:200})
-	email:string
+	@Column({ nullable: true, type: "varchar", length: 200 })
+	email: string
 
-	@Column({nullable:false, type: "varchar", length:200})
-	name:string
+	@Column({ nullable: false, type: "varchar", length: 200 })
+	name: string
 
 	@OneToMany(type => Frete, frete => frete.id)
 	fretes: Frete[];
-	
+
 	@OneToMany(type => Contact, contact => contact.id)
 	contacts: Contact[];
 
 	@OneToMany(type => Parking, parking => parking)
-	@JoinColumn({name:'Parkings'})
+	@JoinColumn({ name: 'Parkings' })
 	Parkings: Parking[];
-	
+
 	@OneToOne(() => TelegramClient, telegram => telegram.user) // specify inverse side as a second parameter
 	@JoinColumn()
 	telegram: TelegramClient;
@@ -48,7 +47,7 @@ export class Client extends BaseEntity{
 
 	// @Column({nullable:true, type: "varchar", length:50})
 	// freight:string
-  
+
 	@CreateDateColumn()
 	createdAt: Date;
 

@@ -3,50 +3,56 @@ import { ApiProperty } from '@nestjs/swagger';
 export class BusyDatesFreteDTO {
 	@ApiProperty({
 		default: true,
-		required:false,
+		required: false,
 	})
 	busy: boolean;
-	
+
 	@ApiProperty({
 		default: true,
-		required:false,
+		required: false,
 	})
 	pageSelected?: number;
 
 	@ApiProperty({
 		default: true,
-		required:false,
+		required: false,
 	})
 	numberOfResults?: number;
 
 	@ApiProperty({
 		default: true,
-		required:false,
+		required: false,
 	})
-	allYearData?: boolean;
-	
-	@ApiProperty({
-		description:'27',
-		required:false
-	})
-  fullDate?:string;
+	clientID?: string;
 
 	@ApiProperty({
-		description:'Domingo',
-		required:false,
-		default:null
+		default: true,
+		required: false,
 	})
-  	weekday?:string[];
-	
+	allYearData?: boolean;
+
 	@ApiProperty({
-		description:'10',
-		required:false
+		description: '27',
+		required: false
 	})
-  month?:string;
-	
+	fullDate?: string;
+
 	@ApiProperty({
-		description:'2022',
-		required:false
+		description: 'Domingo',
+		required: false,
+		default: null
 	})
-  year?: string | null;
+	weekdays?: string[];
+
+	@ApiProperty({
+		description: '10',
+		required: false
+	})
+	month?: string;
+
+	@ApiProperty({
+		description: '2022',
+		required: false
+	})
+	year?: string | null;
 }
