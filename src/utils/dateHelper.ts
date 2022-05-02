@@ -110,10 +110,23 @@ export const dateMonthYearWrited = (date:string) => {
     // return `${date.split('/')[0]}/${year} - ${new Intl.DateTimeFormat('pt-br', {month:'long'}).format(new Date(date))}`
 }
 
-export const getAllDaysInMonth = (month, year) => Array.from(
-  {length: new Date(year, month - 1, 0).getDate() - 1},
-    (_, i) => new Date(year, month - 1, i + 1)
-  ).map(x => x.toLocaleDateString())
+export const getAllDaysInMonth = (month, year) => {
+  const getNumberOfDay = (n) =>{
+    return Number(new Intl.DateTimeFormat('pt-br', {day:"2-digit"}).format(new Date(year, month, n)))
+  }
+  const getMonthString = (day) =>{
+    return `${month}/${day}/${year}`
+  }
+  let dayCount = 0
+  let selectedDay = getNumberOfDay(dayCount)
+  let daysOfTheMonth = []
+  while(selectedDay != 1){
+    selectedDay = getNumberOfDay(dayCount)
+    daysOfTheMonth.push(getMonthString(selectedDay))
+    dayCount--
+  }
+  return daysOfTheMonth
+}
 
 export const dateFrequency = <Type extends {date: Date}>(data: Type[]) => data
   .map(item=>item.date.toLocaleDateString())
