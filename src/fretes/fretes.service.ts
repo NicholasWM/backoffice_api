@@ -395,15 +395,14 @@ export class FretesService {
   }
   async getAvailableDates(getAvailableDaysDTO: GetAvailableDaysDTO): Promise<GetAvailableDatesResponse> {
     const daysOfTheMonth = getAllDaysInMonth(getAvailableDaysDTO.month, getAvailableDaysDTO.year)
-    const firstDate = new Date(daysOfTheMonth[0]) > new Date() ? new Date(daysOfTheMonth[0]).toISOString() : new Date().toISOString()
+    const lastDate = new Date(daysOfTheMonth[0]) > new Date() ? new Date(daysOfTheMonth[0]).toISOString() : new Date().toISOString()
     const [result, count] = await this.fretesRepository.findAndCount({
       select: ['date'],
       where: {
         state: In(["Marcada", "Confirmada", "Pedido de Agendamento"]),
-        date: Between(new Date(firstDate), new Date(daysOfTheMonth[daysOfTheMonth.length - 1]))
+        date: Between(new Date(daysOfTheMonth[daysOfTheMonth.length - 1]), new Date(lastDate))
       }
     })
-
     const frequencyOfDays = dateFrequency<Frete>(result)
     let listOfDays = daysOfTheMonth.filter(
       day =>
