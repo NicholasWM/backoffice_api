@@ -36,6 +36,13 @@ export type ParseVCardResponse = {
 export type TOneMonthSchedulingsCallbackRequestText = [ListsActionCallbackName, number, number, string, string, number[]]
 export type IDefaultExecuteActionCallbackQueryAction = [ExecuteActionCallbackName, string, number]
 
+export interface allClientSchedulingCallbackQueryAction {
+  ctx: TelegrafContext,
+  clientId: string,
+  consultType:IConsultClientDateType,
+  numberOfResults: number,
+  pageSelected: number,
+}
 export interface IOneMonthSchedulingsCallbackQueryAction {
   ctx: TelegrafContext,
   month: string,
@@ -88,6 +95,12 @@ export interface ISendActionToAllUsers {
   name: string
 }
 
+export type IConsultClientDateType = "history" | "scheduled"
+
+export type IDateRange = {
+  [name in IConsultClientDateType]: any
+}
+
 export type ListsActionCallbackName =
   'ALL_DAYS_OF_MONTH_SCHEDULINGS' |
   'ONE_DAY_OF_MONTH_SCHEDULINGS' |
@@ -105,7 +118,7 @@ export type ExecuteActionCallbackName =
   'ASK_CANCEL_SCHED' |
   'ASK_CONFIRM_SCHED' |
   'PRICES_SCHED' |
-  'ALL_CLIENT_SCHEDULINGS' |
+  'ALL_CLIENT_SCHED' |
   'RETURN_TO'
 
 export type CBQueryTelegramListActionToFunction = {
@@ -128,6 +141,7 @@ export type TEntityTypes = 'SCHEDULING'
 export interface IGenerateConfirmActions {
   action: ExecuteActionCallbackName,
   targetId: string,
+  someResource?: any,
 }
 
 export interface MenuResponse {

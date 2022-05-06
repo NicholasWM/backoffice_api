@@ -14,14 +14,14 @@ import { TelegramClientRepository } from 'src/telegram-client/telegram-client.re
 import { TelegramUserService } from 'src/telegram-user/telegram-user.service';
 import { TelegramUserMessageRepository } from 'src/telegram-user-messages/telegram-user.repository';
 import { ExtraReplyMessage, InlineKeyboardButton } from 'telegraf/typings/telegram-types';
-import { Not } from 'typeorm';
+import { Like, Not } from 'typeorm';
 import { PricesService } from 'src/prices/prices.service';
 import { Client } from 'src/clients/clients.entity';
 import { parseVCard } from './helpers';
 import { DateBusy } from 'src/fretes/interfaces';
 import { TelegrafContext } from 'telegraf/typings/context';
 import { CreateFreteDTO } from 'src/fretes/dtos';
-import { CBQueryTelegramExecuteActionToFunction, CBQueryTelegramListActionToFunction, ExecuteActionCallbackName, IAllMonthSchedulingsCallbackQueryAction, IAllSchedulingsRequestsCallbackQueryAction, IOneMonthSchedulingsCallbackQueryAction, ISendActionToAllUsers, KeywordsActionResponse, MATCH_TYPES_ORDER, MenuResponse, MenuResponseParameters, Middlewares, TDaysHifen, TMatchTypesOrder } from './types';
+import { allClientSchedulingCallbackQueryAction, CBQueryTelegramExecuteActionToFunction, CBQueryTelegramListActionToFunction, ExecuteActionCallbackName, IAllMonthSchedulingsCallbackQueryAction, IAllSchedulingsRequestsCallbackQueryAction, IOneMonthSchedulingsCallbackQueryAction, ISendActionToAllUsers, KeywordsActionResponse, MATCH_TYPES_ORDER, MenuResponse, MenuResponseParameters, Middlewares, TDaysHifen, TMatchTypesOrder } from './types';
 import { IState } from 'src/fretes/types';
 
 const daysHifen: TDaysHifen[] = [
@@ -213,6 +213,17 @@ export class TelegramService implements OnModuleInit {
       const [action, clienID] = data
       await this.getClientDetails(clienID, ctx)
     },
+    ALL_CLIENT_SCHED: async (data, ctx) => {
+      const [action, clientId, page] = data
+      console.log(clientId, page)
+      await this.allClientSchedulingCallbackQueryAction({
+        ctx,
+        clientId,
+        consultType:"scheduled",
+        numberOfResults:1,
+        pageSelected: page,
+      })
+    },
     PRICES_SCHED: async (data, ctx) => {
       const [action, clienID] = data
       // await this.getClientDetails(clienID, ctx)
@@ -272,7 +283,7 @@ export class TelegramService implements OnModuleInit {
         const [month, year] = ctx.message.text.split(':')[1].trim().split('/')
         const numberOfResults = 1
         const response = await this.fretesService.getBusyDates({ month: month, year: year, numberOfResults, pageSelected: 1, busy: true })
-
+        // console.log(JSON.stringify(response, null, 2))
         const message = Object.keys(response.dates).map(date => {
           const fretes: DateBusy[] = response.dates[date] as any
           return defaultMessages.calendarView.default(fretes)
@@ -560,8 +571,7 @@ export class TelegramService implements OnModuleInit {
         )
         const menu: InlineKeyboardButton[][] = [[]]
         menu[0].push(this.menuActionButtons.oneSchedulingDetails({ action: 'ONE_SCHED_DETAILS', id: newFrete?.id }))
-
-        return ctx.reply(defaultMessages.frete.default(newFrete), {
+        return ctx.reply(defaultMessages.frete.default({ ...newFrete, client, boatman:{ name: boatmanName } }), {
           reply_markup: {
             inline_keyboard: menu
           },
@@ -824,13 +834,35 @@ export class TelegramService implements OnModuleInit {
       })
     }
     const contactsOfClient = await this.clientsService.getContactsByClientId(client.id)
-
-    ctx.reply(`Contato encontrado: ${defaultMessages.client.default(client, contactsOfClient)}`)
-    return ctx.reply("Oque deseja realizar com esse contato?", {
+    const lastMessage = await this.telegramUserMessageRepository.findOne({
+      where: { updateSubType: 'text' },
+      order: { updatedAt: "DESC" },
+    })
+    const message = `Contato encontrado: ${defaultMessages.client.default(client, contactsOfClient)}`
+    if(lastMessage?.text?.includes('Pedido de Agendamento')){
+      ctx.reply(message)
+      return ctx.reply("Oque deseja realizar com esse contato?", {
+        reply_markup: {
+          keyboard: [
+            [{ "text": "Iniciar agendamento" }],
+            [{ "text": `Visualizar Dados do Cliente: ${client.id}` }],
+          ]
+        }
+      })
+    }
+    return ctx.reply(message, {
       reply_markup: {
-        keyboard: [
-          [{ "text": "Iniciar agendamento" }],
-          [{ "text": `Visualizar Dados do Cliente: ${client.id}` }],
+        inline_keyboard: [
+          [
+            {
+              text: 'Ver agendamentos',
+              callback_data: generate_confirm_actions({
+                action: 'ALL_CLIENT_SCHED',
+                targetId: client?.id,
+                someResource: 1
+              })
+            }
+          ]
         ]
       }
     })
@@ -839,6 +871,7 @@ export class TelegramService implements OnModuleInit {
     try {
       const responseText = ctx.callbackQuery.data
       const data = JSON.parse(responseText)
+      // console.log("ctx.callbackQuery >>>> ",ctx.callbackQuery)
       const [action] = data
       if (action) {
         if (Object.keys(this.listsActionToFunction).includes(action)) {
@@ -1000,6 +1033,94 @@ export class TelegramService implements OnModuleInit {
     }
 
     return next()
+  }
+  async allClientSchedulingCallbackQueryAction({
+    ctx,
+    clientId,
+    consultType,
+    numberOfResults,
+    pageSelected,
+  }: allClientSchedulingCallbackQueryAction) {
+    // Search data
+    const response = await this.fretesService.getClientBusyDates({
+      clientId,
+      consultType,
+      numberOfResults,
+      pageSelected
+    })
+    // Create navigation buttons of menu
+    const menu: InlineKeyboardButton[][] = [[], [], []]
+    const schedID = Object.keys(response.dates).map(key => response.dates[key][0].id)[0]
+    const clienID = Object.keys(response.dates).map(key => response.dates[key][0].client.id)[0]
+    menu[0].push({
+      text: 'Ver Detalhes do Cliente',
+      callback_data: generate_confirm_actions({
+        action: 'CLIENT_DETAILS',
+        targetId: clienID
+      })
+    })
+    menu[1].push(
+      this.menuActionButtons.oneSchedulingDetails({ action: 'ONE_SCHED_DETAILS', id: schedID, customText: 'Ver Detalhes do Frete' })
+    )
+    const lastPage = Math.ceil(response.paginate.count / numberOfResults)
+    Number(response.paginate.prevPage) >= 2
+      && menu[2].push(
+        {
+          text: `<< 1`,
+          callback_data: generate_confirm_actions({
+            action: 'ALL_CLIENT_SCHED',
+            targetId: clienID,
+            someResource: 1
+          })
+        })
+    response.paginate.prevPage
+      && menu[2].push(
+        {
+          text: `<  ${String(response.paginate.prevPage)}`,
+          callback_data: generate_confirm_actions({
+            action: 'ALL_CLIENT_SCHED',
+            targetId: clienID,
+            someResource: response.paginate.prevPage
+          })
+        })
+
+    response.paginate.nextPage
+      && menu[2].push(
+        {
+          text: `${String(response.paginate.nextPage)}  >`,
+          callback_data: generate_confirm_actions({
+            action: 'ALL_CLIENT_SCHED',
+            targetId: clienID,
+            someResource: response.paginate.nextPage
+          })
+        })
+    response.paginate.nextPage
+      && lastPage > response.paginate.nextPage && menu[2].push(
+        {
+          text: `${String(lastPage)}  >>`,
+          callback_data: generate_confirm_actions({
+            action: 'ALL_CLIENT_SCHED',
+            targetId: clienID,
+            someResource: Math.ceil(response.paginate.count / numberOfResults)
+          })
+        })
+    // Done
+
+    // Create message Text
+    const message = Object.keys(response.dates).map(date => {
+      const fretes: DateBusy[] = response.dates[date] as any
+      return defaultMessages.calendarView.default(fretes)
+    })
+    message.push(defaultMessages.dateOfRequest.default())
+    message.push('\n')
+    //Done
+
+    // Send message with menu
+    return ctx.editMessageText(message.join('\n'), {
+      reply_markup: {
+        inline_keyboard: menu
+      },
+    });
   }
   async oneMonthSchedulingsCallbackQueryAction({
     ctx,
@@ -1683,18 +1804,20 @@ export class TelegramService implements OnModuleInit {
     return ctx.editMessageText(
       defaultMessages.client.default(client, client?.contacts),
       {
-        // reply_markup: {
-        //   inline_keyboard: [
-        //     [
-        //       {
-        //         text: 'Ver agendamentos',
-        //         callback_data: generate_confirm_actions({
-        //           action: 'ALL_CLIENT_SCHEDULINGS',
-        //         })
-        //       }
-        //     ]
-        //   ]
-        // }
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: 'Ver agendamentos',
+                callback_data: generate_confirm_actions({
+                  action: 'ALL_CLIENT_SCHED',
+                  targetId: clienID,
+                  someResource: 1
+                })
+              }
+            ]
+          ]
+        }
       }
     )
   }
