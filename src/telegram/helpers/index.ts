@@ -428,7 +428,6 @@ export const defaultMessages: IDefaultMessages = {
   calendarView: {
     noResults: "Sem resultados!",
     default: (dates: DateBusy[]) => {
-
       function getMessage(boatman: Boatman, client: Client, id: string, state, dateOfScheduling: Date) {
         let message = ""
 
@@ -445,16 +444,9 @@ export const defaultMessages: IDefaultMessages = {
         message += `\n`
         message += `🎣  Cliente: ${client?.name}  🎣\n`
         message += `⛴️  Barqueiro: ${boatman?.name}  ⛴️\n`
-        message += `${stateColor[state]}  Estado  ${stateColor[state]}: ${state}\n`
-        message += `\n`
-        message += `🔎  Detalhes do Cliente  🔎\n`
-        message += `${makeLinks('clien', client?.id)}\n`
-        message += `\n`
-        message += `ℹ️  Detalhes do agendamento  ℹ️\n`
-        message += `${makeLinks('sched', id)}`
+        message += `${stateColor[state]}  Estado  ${stateColor[state]}: ${state}`
         return message
       }
-      console.log(dates[0].client)
       const message = dates.map((frete: DateBusy) => {
         const { boatman, client, date, id, state } = frete
         return getMessage(
@@ -480,11 +472,13 @@ export const defaultMessages: IDefaultMessages = {
 export function generate_confirm_actions({
   action,
   targetId,
+  someResource
 }: Partial<IGenerateConfirmActions>) {
-  const data = [
+  let data = [
     action,
     targetId,
   ]
+  someResource && data.push(someResource)
   return JSON.stringify(data)
 }
 

@@ -8,10 +8,10 @@ import { FretesRepository } from './fretes.repository';
 import { InsertImagesFreteDTO } from './dtos'
 import { ClientRepository } from 'src/clients/clients.repository';
 import { Frete_Image } from 'src/images/frete-images.entity';
-import { DatesBusy, GetAvailableDatesResponse, GetBusyDatesResponse, ICounters, IFreteWithImages, IGetSchedulingRequests, IGetSchedulingRequestsResponse, months } from './interfaces';
+import { ClientDatesFreteResponse, DatesBusy, GetAvailableDatesResponse, GetBusyDatesResponse, ICountersBusyDates, IFreteWithImages, IGetSchedulingRequests, IGetSchedulingRequestsResponse, months } from './interfaces';
 import { IState } from './types';
 import { PriceRepository } from 'src/prices/prices.repository';
-import { Between, getConnection, getManager, In, Not, Raw } from 'typeorm';
+import { Between, FindConditions, getConnection, getManager, In, LessThanOrEqual, MoreThanOrEqual, Not, ObjectLiteral, Raw } from 'typeorm';
 import { GetFreteByIdDTO } from './dtos/get-by-id-dto';
 import { BusyDatesFreteDTO } from './dtos/busy-dates-frete-dto';
 import { BoatmanRepository } from 'src/boatman/boatman.repository';
@@ -21,6 +21,8 @@ import { GetAvailableDaysDTO } from './dtos/get-available-days.dto';
 import { dateFrequency, getAllDaysInMonth } from 'src/utils/dateHelper';
 import { handlePaginateResponse } from 'src/utils/pagination';
 import { TelegramService } from 'src/telegram/telegram.service';
+import { ClientDatesFreteDTO } from './dtos/client-dates-dto';
+import { IConsultClientDateType, IDateRange } from 'src/telegram/types';
 
 export const orderDates = (a, b) => {
   if (new Date(a) > new Date(b)) {
@@ -275,6 +277,100 @@ export class FretesService {
       frete: frete
     }
   }
+  async getClientBusyDates(busyDatesFreteDTO: ClientDatesFreteDTO): Promise<ClientDatesFreteResponse> {
+    const { consultType, clientId, numberOfResults, pageSelected, weekdays } = busyDatesFreteDTO
+    const take = weekdays ? 100 : numberOfResults || 10
+    
+    const dateRange:IDateRange = {
+      "history": LessThanOrEqual,
+      "scheduled": MoreThanOrEqual,
+    }
+    // const dateRange:string | ObjectLiteral | FindConditions<Frete> | FindConditions<Frete>[] = {
+      
+    const page = pageSelected || 1;
+    const skip = (page - 1) * take;
+
+    // eslint-disable-next-line prefer-const
+    let [fretes, total] = await this.fretesRepository.findAndCount({
+      relations: ["client", 'boatman'],
+      order: { date: 'ASC' },
+      where: {
+        clientId,
+        date: dateRange[consultType](new Date().toLocaleString())
+      },
+      take: take,
+      skip: weekdays ? 0 : skip
+    })
+    console.log(consultType, clientId, numberOfResults, pageSelected, weekdays)
+    console.log(fretes)
+
+    const datesBusy: DatesBusy = {} as DatesBusy
+    const counters: ICountersBusyDates = {
+      'Marcada': 0,
+      'Cancelada': 0,
+      'Pedido de Agendamento': 0,
+      'Adiada': 0,
+      'Confirmada': 0,
+      'FretesPerMonth': {},
+      'FretesThisWeek': [],
+    }
+    if (weekdays) {
+      fretes = fretes.filter(({ state, date, id }) => {
+        return weekdays.find(element => {
+          return element?.toUpperCase() === new Intl.DateTimeFormat('pt-br', { weekday: 'long' }).format(new Date(date)).toUpperCase()
+        })
+      })
+      total = fretes.length
+      fretes = fretes.filter((data, index) => {
+
+        if (page === 1) {
+          return index < numberOfResults * Number(page)
+        }
+        return index < numberOfResults * Number(page) && index >= numberOfResults * Number(page - 1)
+      })
+    }
+
+    fretes.map(({ state, date, id }) => {
+      counters[state] += 1
+      let month = months[Number(date.getMonth())]
+      if (state !== 'Cancelada' && state !== 'Adiada') {
+        counters['FretesPerMonth'][month] ? counters['FretesPerMonth'][month].push(id) : counters['FretesPerMonth'][month] = [id]
+        if (date.getMonth() == new Date().getMonth() && (date.getUTCDate() - new Date().getUTCDate()) <= 7) {
+          counters['FretesThisWeek'].push(id)
+        }
+      }
+    }
+    )
+    if (fretes) {
+      fretes.map(({ date, id, state, client, boatman }) => {
+        const day = String(date.getDate())
+        const month = String(date.getMonth() + 1)
+        const key = `${date.getFullYear()}/${month.length < 2 ? "0" : ""}${month}/${day.length < 2 ? "0" : ""}${day}`
+
+        if (Object.keys(datesBusy).includes(key)) {
+          datesBusy[key].push({ date, id, state, client, boatman })
+        } else {
+          datesBusy[key] = [{ date, id, state, client, boatman }]
+        }
+      })
+      return {
+        dates: datesBusy,
+        counters,
+        paginate:
+          handlePaginateResponse(
+            {
+              data: {
+                result: fretes,
+                total
+              },
+              page: Number(page),
+              limit: weekdays ? numberOfResults : Number(take)
+            }
+          )
+      }
+    }
+    return null
+  }
   async getBusyDates(busyDatesFreteDTO: BusyDatesFreteDTO): Promise<GetBusyDatesResponse> {
     const { fullDate, month, year, numberOfResults, pageSelected, weekdays } = busyDatesFreteDTO
     const initialDate = `${year || new Date().getUTCFullYear()}\\${month ? month : year ? 1 : new Date().getMonth() + 1}\\${month ? 1 : year ? 1 : new Date().getUTCDate()}`
@@ -307,7 +403,7 @@ export class FretesService {
     })
 
     const datesBusy: DatesBusy = {} as DatesBusy
-    const counters: ICounters = {
+    const counters: ICountersBusyDates = {
       'Marcada': 0,
       'Cancelada': 0,
       'Pedido de Agendamento': 0,
@@ -393,6 +489,8 @@ export class FretesService {
       select: ['id', 'name']
     })
   }
+
+
   async getAvailableDates(getAvailableDaysDTO: GetAvailableDaysDTO): Promise<GetAvailableDatesResponse> {
     const daysOfTheMonth = getAllDaysInMonth(getAvailableDaysDTO.month, getAvailableDaysDTO.year)
     const lastDate = new Date(daysOfTheMonth[0]) > new Date() ? new Date(daysOfTheMonth[0]).toISOString() : new Date().toISOString()

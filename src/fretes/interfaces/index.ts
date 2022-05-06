@@ -7,7 +7,12 @@ export type DateBusy = Pick<Frete, 'date'| 'id' | 'state' | 'client' | 'boatman'
 export type DatesBusy = {[name:string]: DateBusy[]}
 export interface GetBusyDatesResponse{
   dates: DatesBusy
-  counters:ICounters;
+  counters:ICountersBusyDates;
+  paginate: PaginateResponse;
+}
+export interface ClientDatesFreteResponse{
+  dates: DatesBusy
+  counters:ICountersClientDates;
   paginate: PaginateResponse;
 }
 export interface IFreteWithImages {
@@ -38,7 +43,16 @@ export interface IFretesPerMonth {
   'Novembro'?:[],
   'Dezembro'?:[],
 }
-export interface ICounters {
+export interface ICountersClientDates {
+  'Marcada'?: number,
+  'Pedido de Agendamento'?: number,
+  'Cancelada'?: number,
+  'Adiada'?: number,
+  'Confirmada'?: number,
+  'FretesPerMonth': IFretesPerMonth,
+  'FretesThisWeek':  string[],
+}
+export interface ICountersBusyDates {
   'Marcada'?: number,
   'Pedido de Agendamento'?: number,
   'Cancelada'?: number,
