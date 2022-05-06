@@ -119,6 +119,7 @@ export type ExecuteActionCallbackName =
   'ASK_CONFIRM_SCHED' |
   'PRICES_SCHED' |
   'ALL_CLIENT_SCHED' |
+  'CLIENT_HISTORY' |
   'RETURN_TO'
 
 export type CBQueryTelegramListActionToFunction = {

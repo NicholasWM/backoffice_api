@@ -224,6 +224,17 @@ export class TelegramService implements OnModuleInit {
         pageSelected: page,
       })
     },
+    CLIENT_HISTORY: async (data, ctx) => {
+      const [action, clientId, page] = data
+      console.log(clientId, page)
+      await this.allClientSchedulingCallbackQueryAction({
+        ctx,
+        clientId,
+        consultType:"history",
+        numberOfResults:1,
+        pageSelected: page,
+      })
+    },
     PRICES_SCHED: async (data, ctx) => {
       const [action, clienID] = data
       // await this.getClientDetails(clienID, ctx)
@@ -853,6 +864,16 @@ export class TelegramService implements OnModuleInit {
     return ctx.reply(message, {
       reply_markup: {
         inline_keyboard: [
+          [
+            {
+              text: 'Histórico de Agendamento',
+              callback_data: generate_confirm_actions({
+                action: 'CLIENT_HISTORY',
+                targetId: client?.id,
+                someResource: 1
+              })
+            },
+          ],
           [
             {
               text: 'Ver agendamentos',
@@ -1806,6 +1827,16 @@ export class TelegramService implements OnModuleInit {
       {
         reply_markup: {
           inline_keyboard: [
+            [
+              {
+                text: 'Histórico de Agendamento',
+                callback_data: generate_confirm_actions({
+                  action: 'CLIENT_HISTORY',
+                  targetId: clienID,
+                  someResource: 1
+                })
+              },
+            ],
             [
               {
                 text: 'Ver agendamentos',
